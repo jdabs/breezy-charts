@@ -101,7 +101,7 @@ const sorted = () => bars.every((b, i) => !i || b.time > bars[i-1].time);
     $('indBtn').click(); $('newScript').click(); await sleep(100);
     const ns = scripts[scripts.length - 1];
     T('new script opens, is on and draws', scripts.length === 5 && ns.on && $('editor').classList.contains('show') && $('edName').value === 'My script' && !!seriesOf('s:' + ns.id + ':0') && /^OK · drawing 1 series/.test($('edMsg').textContent), $('edMsg').textContent);
-    T('scripts are saved', JSON.parse(localStorage.getItem('chartdesk.scripts')).length === 5);
+    T('scripts are saved', JSON.parse(localStorage.getItem('breezycharts.scripts')).length === 5);
 
     /* ---- scripts: gaps and dots survive refreshes ---- */
     type($('edSrc'), ['avg = sma(close, 20)', 'plot(close > avg ? high : na, "Above", color=pink, width=3)', 'plot(crossover(close, avg) ? low : na, "Buy", color=green, style=dots)', 'plot(crossunder(close, avg) ? high : na, "Sell", color=red, style=dots)'].join('\n'));
@@ -129,11 +129,11 @@ const sorted = () => bars.every((b, i) => !i || b.time > bars[i-1].time);
     tdMem = []; // as after a reload: only the saved log is left
     let chartWaited = true; tdAcquire('user').then(() => { chartWaited = false; });
     await sleep(500);
-    T('spent credits survive a reload', JSON.parse(localStorage.getItem('chartdesk.tdLog')).length === 8 && chartWaited);
+    T('spent credits survive a reload', JSON.parse(localStorage.getItem('breezycharts.tdLog')).length === 8 && chartWaited);
     tdQueue.length = 0; // forget the requests left waiting above
 
     /* ---- Twelve Data daily allowance ---- */
-    T('credits are counted for the day', tdDayUsed() === 8 && JSON.parse(localStorage.getItem('chartdesk.tdDay')).n === 8 && /^8 \/ 800/.test($('tdDay').textContent), $('tdDay').textContent);
+    T('credits are counted for the day', tdDayUsed() === 8 && JSON.parse(localStorage.getItem('breezycharts.tdDay')).n === 8 && /^8 \/ 800/.test($('tdDay').textContent), $('tdDay').textContent);
     tdDaySet(640);
     T('warns from 80% of the daily allowance', /640 of 800/.test($('tdDay').textContent) && $('tdDay').style.color.includes('--warn'), $('tdDay').textContent);
     let dayErr = ''; try { tdDayRefused({ code:429, message:'You have run out of API credits for the day. 801 API credits were used, with the current limit being 800.' }); } catch (e) { dayErr = e.message; }

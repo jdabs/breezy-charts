@@ -1,8 +1,8 @@
-# ChartDesk
+# BreezyCharts
 
-A personal price-chart desk in one static file, for use on your own computer. No build step, no server, no account: open `index.html` and it works.
+A personal price-chart app in one static file, for use on your own computer. No build step, no server, no account: open `index.html` and it works.
 
-![ChartDesk showing BTC-USD on the 1-hour timeframe](screenshot.png)
+![BreezyCharts showing BTC-USD on the 1-hour timeframe](screenshot.png)
 
 ## What it does
 
@@ -21,7 +21,7 @@ A personal price-chart desk in one static file, for use on your own computer. No
 
 Download `index.html` and open it in a browser on your own computer. The whole app is that one file. It needs an internet connection to load the charting library and prices.
 
-ChartDesk is meant for personal use, run locally with your own data key. It is not meant to be published as a website for other people: the stock data comes under Twelve Data's terms, and its free plan is for personal use only.
+BreezyCharts is meant for personal use, run locally with your own data key. It is not meant to be published as a website for other people: the stock data comes under Twelve Data's terms, and its free plan is for personal use only.
 
 Type anywhere to jump to the symbol box, then press Enter. Press Esc to cancel placing a line.
 
@@ -93,13 +93,13 @@ The language is its own script block in `index.html` (`<script id="formula">`). 
 Stocks need a free Twelve Data key:
 
 1. Register at [twelvedata.com/register](https://twelvedata.com/register). No card is needed.
-2. In ChartDesk, open ⚙ Settings and paste the key.
+2. In BreezyCharts, open ⚙ Settings and paste the key.
 
 The free plan covers US markets and is for personal use only. Use your own key, on your own computer, and do not put the charts or prices where other people can see them. Twelve Data's terms say what your plan allows.
 
 #### Credits
 
-Twelve Data counts usage in credits, and the free plan allows 8 a minute and 800 a day. ChartDesk spends them like this:
+Twelve Data counts usage in credits, and the free plan allows 8 a minute and 800 a day. BreezyCharts spends them like this:
 
 | Action | Credits |
 | --- | --- |
@@ -108,7 +108,7 @@ Twelve Data counts usage in credits, and the free plan allows 8 a minute and 800
 | Loading older bars when you scroll back | 1 per page of 500 bars |
 | Watchlist quotes, once a minute | 1 per symbol, 3 symbols per round |
 
-ChartDesk paces its own requests so it stays inside the per-minute limit:
+BreezyCharts paces its own requests so it stays inside the per-minute limit:
 
 - **Background use is 4 credits a minute**: 1 for the chart and 3 for the watchlist. The other 4 are there for your clicks.
 - **The watchlist rotates.** Each round quotes the three symbols whose prices are oldest, so a six-symbol list is fully refreshed about every two minutes, and a longer list takes proportionally longer.
@@ -116,9 +116,9 @@ ChartDesk paces its own requests so it stays inside the per-minute limit:
 - **Only the chart you ended on is loaded.** If you click through several symbols or timeframes while requests are waiting, the ones you skipped past are dropped without spending a credit.
 - **Requests wait instead of failing.** If a minute's credits are used up, the status line shows "Waiting for Twelve Data rate limit…" and the chart loads as soon as a credit is free, at most about a minute later.
 - **The count is shared.** It is kept in your browser, so several tabs share one budget and a reload does not reset it. Saving a different key starts a new count.
-- **Use elsewhere is not counted.** If the same key is used in another browser or on another device, Twelve Data may refuse a request anyway. ChartDesk then waits out the minute and tries the chart once more.
+- **Use elsewhere is not counted.** If the same key is used in another browser or on another device, Twelve Data may refuse a request anyway. BreezyCharts then waits out the minute and tries the chart once more.
 
-At 4 credits a minute, a tab left open and visible uses the 800 daily credits in a little over three hours. The status bar shows how many credits this browser has spent today. The count turns amber with a warning at 640 (80%) and red at 800, after which Twelve Data refuses requests until the next day and ChartDesk says so instead of retrying. The count restarts at midnight UTC and, like the per-minute count, does not see use of the same key elsewhere. Refreshes stop while the tab is in the background, and you can turn automatic refresh off in ⚙ Settings so that credits are spent only when you click or come back to the tab.
+At 4 credits a minute, a tab left open and visible uses the 800 daily credits in a little over three hours. The status bar shows how many credits this browser has spent today. The count turns amber with a warning at 640 (80%) and red at 800, after which Twelve Data refuses requests until the next day and BreezyCharts says so instead of retrying. The count restarts at midnight UTC and, like the per-minute count, does not see use of the same key elsewhere. Refreshes stop while the tab is in the background, and you can turn automatic refresh off in ⚙ Settings so that credits are spent only when you click or come back to the tab.
 
 ## Privacy
 
@@ -139,7 +139,7 @@ The first checks the formula language on its own. The second opens the app in he
 
 Charts are drawn with [TradingView Lightweight Charts™](https://github.com/tradingview/lightweight-charts) (Apache 2.0). Market data comes from [Coinbase Exchange](https://docs.cdp.coinbase.com/exchange/docs/welcome) and [Twelve Data](https://twelvedata.com/).
 
-ChartDesk is not financial advice, and prices may be delayed or wrong.
+BreezyCharts is not financial advice, and prices may be delayed or wrong.
 
 ## License
 

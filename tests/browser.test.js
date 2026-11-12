@@ -29,7 +29,7 @@ const checks = fs.readFileSync(path.join(__dirname, 'browser-checks.js'), 'utf8'
 const end = html.lastIndexOf('})();'); // the close of the app's script, so the checks share its scope
 if (end < 0) { console.error('Could not find the end of the app script in index.html.'); process.exit(2); }
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'chartdesk-test-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'breezycharts-test-'));
 let out = '';
 try {
   fs.writeFileSync(path.join(tmp, 'index.html'), html.slice(0, end) + '\n' + checks + '\n' + html.slice(end));

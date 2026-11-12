@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ChartDesk</title>
+<title>BreezyCharts</title>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.1.0/dist/lightweight-charts.standalone.production.js" integrity="sha384-ExNwjbclSLY2LS3S2c6aDJDjpBHGZLct23WX65fLzj0ob1bRrCh9H90WThES5wQA" crossorigin="anonymous"></script>
 <style>
   :root{
@@ -107,7 +107,7 @@
 <body>
 <div class="app">
   <header>
-    <div class="brand">Chart<span>Desk</span></div>
+    <div class="brand">Breezy<span>Charts</span></div>
     <input id="symInput" class="sym" spellcheck="false" autocomplete="off" title="Type a symbol and press Enter">
     <div id="tfGroup" class="group"></div>
     <select id="chartType" class="btn" title="Chart type">
@@ -182,7 +182,7 @@
 
 <!-- The formula language for custom indicators. Self-contained: it defines window.Formula and nothing else. -->
 <script id="formula">
-/* ChartDesk Formula: a small series-based language for chart indicators.
+/* BreezyCharts Formula: a small series-based language for chart indicators.
 
    A script is a list of lines, each either `name = expression` or a call such as plot(...).
    Every value is a number, a piece of text, or a series holding one value per bar, and
@@ -747,9 +747,18 @@ if (!LC) { document.getElementById('overlayMsg').textContent = 'Could not load t
 
 /* ---- storage ---- */
 const store = {
-  get(k, d){ try { const v = localStorage.getItem('chartdesk.'+k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v){ try { localStorage.setItem('chartdesk.'+k, JSON.stringify(v)); } catch {} }
+  get(k, d){ try { const v = localStorage.getItem('breezycharts.'+k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem('breezycharts.'+k, JSON.stringify(v)); } catch {} }
 };
+// One-time move of anything saved under the app's former name, so the key, watchlists and scripts carry over.
+try {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const old = localStorage.key(i); if (!old || !old.startsWith('chartdesk.')) continue;
+    const now = 'breezycharts.' + old.slice('chartdesk.'.length);
+    if (localStorage.getItem(now) == null) localStorage.setItem(now, localStorage.getItem(old));
+    localStorage.removeItem(old);
+  }
+} catch {}
 
 /* ---- helpers ---- */
 const $ = id => document.getElementById(id);
