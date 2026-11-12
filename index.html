@@ -1093,6 +1093,23 @@ plot(k, "%K", color=blue, pane=below)
 plot(d, "%D", color=orange, pane=below)
 hline(80)
 hline(20)` },
+  { name:'Squeeze Momentum', src:`// Squeeze Momentum: Bollinger Bands inside the Keltner Channel = volatility squeeze.
+// Red dots on the zero line = squeeze on (coiling); gray = released. Histogram = momentum direction.
+length = input(20, "Length", min=5)
+bbMult = input(2, "BB mult", min=0.5, step=0.1)
+kcMult = input(1.5, "KC mult", min=0.5, step=0.1)
+
+basis = sma(close, length)
+bbDev = bbMult * stdev(close, length)
+kcDev = kcMult * atr(length)
+squeeze = bbDev < kcDev
+
+mid = avg(avg(highest(high, length), lowest(low, length)), basis)
+mom = linreg(close - mid, length)
+rising = mom > nz(mom[1])
+
+plot(mom, "Momentum", color = mom >= 0 ? (rising ? green : teal) : (rising ? orange : red), style=histogram, pane=below)
+plot(0, "Squeeze", color = squeeze ? red : gray, width=3, style=dotted, pane=below)` },
 ];
 const NEW_SCRIPT = `// Build a line from open, high, low, close and volume.
 // Open Reference below for everything you can use.

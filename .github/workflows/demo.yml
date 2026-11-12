@@ -1,0 +1,37 @@
+# Publishes the demo/ folder, and nothing else, to GitHub Pages.
+# The full app (index.html at the top of the repository) is never published.
+#
+# One-time setup: on GitHub, open Settings -> Pages and set "Source" to "GitHub Actions".
+# After that, every push to main that changes demo/ publishes it again. It can also be run by hand
+# from the Actions tab.
+name: Publish demo
+
+on:
+  push:
+    branches: [main]
+    paths: ['demo/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -53,16 +53,16 @@ const sorted = () => bars.every((b, i) => !i || b.time > bars[i-1].time);
     ['ema200', 'bb', 'vwap', 'rsi', 'macd'].forEach(k => { state.ind[k] = false; }); buildIndicators();
 
     /* ---- scripts: menu ---- */
-    T('formula language loaded with the examples', !!FX && scripts.length === 5, scripts.map(x => x.name));
+    T('formula language loaded with the examples', !!FX && scripts.length === 6, scripts.map(x => x.name));
     T('examples are off by default', scripts.every(x => !x.on) && indSeries.every(x => !x.key.startsWith('s:')));
     $('indBtn').click();
-    T('menu lists scripts', document.querySelectorAll('#indDrop [data-script]').length === 5 && !!$('newScript'));
+    T('menu lists scripts', document.querySelectorAll('#indDrop [data-script]').length === 6 && !!$('newScript'));
     document.querySelectorAll('#indDrop [data-script]').forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles:true })); });
     await sleep(200);
     const errs = scripts.filter(x => scriptInfo[x.id] && scriptInfo[x.id].err).map(x => x.name + ': ' + scriptInfo[x.id].err);
     T('every example runs', errs.length === 0, errs);
-    T('examples create their series', indSeries.filter(x => x.key.startsWith('s:')).length === 3 + 3 + 3 + 1 + 4, indSeries.map(x => x.key));
-    T('MACD and Stochastic get one pane each', chart.panes().length === 3, chart.panes().length);
+    T('examples create their series', indSeries.filter(x => x.key.startsWith('s:')).length === 3 + 3 + 3 + 1 + 4 + 2, indSeries.map(x => x.key));
+    T('MACD, Stochastic and Squeeze get one pane each', chart.panes().length === 4, chart.panes().length);
 
     /* ---- scripts: output ---- */
     const closes = bars.map(b => b.close), f = ema(closes, 12), sl = ema(closes, 26), md = lastOf('s:ex0:1');
@@ -97,11 +97,11 @@ const sorted = () => bars.every((b, i) => !i || b.time > bars[i-1].time);
     $('edOn').checked = false; $('edOn').onchange({ target:$('edOn') });
     T('Show off hides the script', !seriesOf('s:ex1:0') && /hidden/.test($('edMsg').textContent), $('edMsg').textContent);
     $('edDelete').click();
-    T('delete removes the script', scripts.length === 4 && !$('editor').classList.contains('show') && !scripts.some(x => x.id === 'ex1'));
+    T('delete removes the script', scripts.length === 5 && !$('editor').classList.contains('show') && !scripts.some(x => x.id === 'ex1'));
     $('indBtn').click(); $('newScript').click(); await sleep(100);
     const ns = scripts[scripts.length - 1];
-    T('new script opens, is on and draws', scripts.length === 5 && ns.on && $('editor').classList.contains('show') && $('edName').value === 'My script' && !!seriesOf('s:' + ns.id + ':0') && /^OK · drawing 1 series/.test($('edMsg').textContent), $('edMsg').textContent);
-    T('scripts are saved', JSON.parse(localStorage.getItem('breezycharts.scripts')).length === 5);
+    T('new script opens, is on and draws', scripts.length === 6 && ns.on && $('editor').classList.contains('show') && $('edName').value === 'My script' && !!seriesOf('s:' + ns.id + ':0') && /^OK · drawing 1 series/.test($('edMsg').textContent), $('edMsg').textContent);
+    T('scripts are saved', JSON.parse(localStorage.getItem('breezycharts.scripts')).length === 6);
 
     /* ---- scripts: gaps and dots survive refreshes ---- */
     type($('edSrc'), ['avg = sma(close, 20)', 'plot(close > avg ? high : na, "Above", color=pink, width=3)', 'plot(crossover(close, avg) ? low : na, "Buy", color=green, style=dots)', 'plot(crossunder(close, avg) ? high : na, "Sell", color=red, style=dots)'].join('\n'));

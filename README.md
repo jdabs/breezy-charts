@@ -21,7 +21,7 @@ A personal price-chart app in one static file, for use on your own computer. No 
 
 Download `index.html` and open it in a browser on your own computer. The whole app is that one file. It needs an internet connection to load the charting library and prices.
 
-BreezyCharts is meant for personal use, run locally with your own data key. It is not meant to be published as a website for other people: the stock data comes under Twelve Data's terms, and its free plan is for personal use only.
+BreezyCharts is meant for personal use, run locally with your own data key. It is not meant to be published as a website for other people: the stock data comes under Twelve Data's terms, and its free plan is for personal use only. The one exception is the demo copy below, which uses no market data at all.
 
 Type anywhere to jump to the symbol box, then press Enter. Press Esc to cancel placing a line.
 
@@ -39,7 +39,9 @@ Providers are `coinbase`, `twelvedata` and `demo`. Timeframes are `1m`, `5m`, `1
 
 ### Writing your own indicators
 
-Open **Indicators**. Under **Scripts** you will find a few examples (MACD, Donchian channel, Keltner channel, SuperTrend, Stochastic) and **+ New script**. Tick a script to draw it, or press ✎ to edit it. The chart updates as you type, and mistakes are reported with their line number.
+Open **Indicators**. Under **Scripts** you will find a few examples (MACD, Donchian channel, Keltner channel, SuperTrend, Stochastic, Squeeze Momentum) and **+ New script**. Tick a script to draw it, or press ✎ to edit it. The chart updates as you type, and mistakes are reported with their line number.
+
+![The script editor open on a Squeeze Momentum script, with its Length, BB mult and KC mult inputs below the code and its histogram drawn in a pane under the price chart](script-editor.png)
 
 A script is a list of lines. Each line either names a value or calls a function:
 
@@ -124,6 +126,20 @@ At 4 credits a minute, a tab left open and visible uses the 800 daily credits in
 
 Everything stays in your browser. Your API key, watchlists, lines, scripts and settings are kept in `localStorage` and are sent nowhere except, for the key, to Twelve Data with each request. A chart link carries only the provider, symbol and timeframe, never your key.
 
+## Demo
+
+`demo/index.html` is a copy of the app that shows only simulated prices, so it can be put online for people to try. The Coinbase and Twelve Data sources and the API key field are removed from it, not just hidden, so it makes no requests for market data. Everything else works as in the full app, including scripts, indicators and lines, and a link in its header points back here.
+
+Don't edit `demo/index.html` directly. It is generated from `index.html`; after changing the app, rebuild it:
+
+```
+node tools/build-demo.js
+```
+
+The browser tests fail if the demo is out of date.
+
+The workflow in `.github/workflows/demo.yml` publishes the `demo/` folder, and only that folder, to GitHub Pages. To turn it on, open the repository's **Settings → Pages** on GitHub and set **Source** to **GitHub Actions**. It then publishes again whenever a push to `main` changes `demo/`, and can be run by hand from the **Actions** tab.
+
 ## Tests
 
 Both need [Node.js](https://nodejs.org/) and nothing else to install.
@@ -133,7 +149,7 @@ node tests/formula.test.js
 node tests/browser.test.js
 ```
 
-The first checks the formula language on its own. The second opens the app in headless Chrome, Chromium or Edge and exercises links, history, refresh, the indicators and the script editor against the offline Demo source. It needs an internet connection for the charting library; set `CHROME` to the browser's path if it is not found.
+The first checks the formula language on its own. The second opens the app in headless Chrome, Chromium or Edge and exercises links, history, refresh, the indicators and the script editor against the offline Demo source. It then opens the demo copy and checks that it has no live sources and makes no network requests. It needs an internet connection for the charting library; set `CHROME` to the browser's path if it is not found.
 
 ## Credits
 
