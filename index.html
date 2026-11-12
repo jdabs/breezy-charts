@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChartDesk</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.1.0/dist/lightweight-charts.standalone.production.js" integrity="sha384-ExNwjbclSLY2LS3S2c6aDJDjpBHGZLct23WX65fLzj0ob1bRrCh9H90WThES5wQA" crossorigin="anonymous"></script>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#161a22; --panel2:#1c212b; --line:#262c38; --text:#d6dae3; --muted:#7c8494;
+    --accent:#3d8bfd; --up:#22ab94; --down:#f23645; --warn:#e3a33b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif}
+  button,input,select{font:inherit;color:inherit}
+  .app{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:1fr 260px;height:100vh}
+  header{grid-column:1/3;display:flex;gap:6px;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand{font-weight:700;letter-spacing:.3px;margin-right:6px}
+  .brand span{color:var(--accent)}
+  .sym{width:130px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;text-transform:uppercase;font-weight:600}
+  .sym:focus{outline:1px solid var(--accent)}
+  .group{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .group button{background:none;border:0;padding:5px 9px;cursor:pointer;color:var(--muted)}
+  .group button:hover{color:var(--text);background:#232937}
+  .group button.on{color:var(--text);background:#2a3242}
+  .btn{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+  .btn:hover{border-color:#3a4252}
+  .btn.on{border-color:var(--accent);color:#fff}
+  select.btn{padding:5px 6px}
+  .spacer{flex:1}
+  .menu{position:relative}
+  .menu .drop{display:none;position:absolute;top:110%;left:0;z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px;min-width:230px;max-height:80vh;overflow:auto;box-shadow:0 8px 24px #0008}
+  .menu.open .drop{display:block}
+  .drop label{display:flex;gap:8px;align-items:center;padding:5px 6px;border-radius:5px;cursor:pointer}
+  .drop label:hover{background:var(--panel2)}
+  .drop .sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .drop .sep{margin:6px 6px 2px;padding-top:6px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+  .drop .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .drop .mini{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 4px}
+  .drop .mini:hover{color:var(--text)}
+  .drop .warn{color:var(--warn)}
+  .drop .new{width:100%;margin-top:4px;text-align:left}
+  .drop .note{padding:5px 6px;color:var(--muted);font-size:12px}
+  main{position:relative;min-width:0;min-height:0}
+  .editor{display:none;position:absolute;left:10px;bottom:10px;z-index:7;color-scheme:dark;width:min(460px,calc(100% - 20px));max-height:calc(100% - 20px);flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;box-shadow:0 8px 24px #0008}
+  .editor.show{display:flex}
+  .editor .row{display:flex;gap:8px;align-items:center}
+  .editor input[type=text],.editor input[type=number]{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;min-width:0}
+  .editor #edName{flex:1;font-weight:600}
+  .editor textarea{flex:1 1 200px;min-height:140px;resize:vertical;background:#0c0f14;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,Menlo,monospace;tab-size:2;white-space:pre;overflow:auto}
+  .editor textarea:focus,.editor input:focus{outline:1px solid var(--accent)}
+  .ed-msg{font-size:12px;color:var(--up);overflow-wrap:anywhere}
+  .ed-msg.err{color:var(--down)}
+  .ed-msg.off{color:var(--muted)}
+  .ed-inputs{display:flex;flex-wrap:wrap;gap:6px 12px}
+  .ed-inputs:empty{display:none}
+  .ed-inputs label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px}
+  .ed-inputs input{width:84px}
+  .ed-ref{font-size:12px;color:var(--muted)}
+  .ed-ref summary{cursor:pointer}
+  .ed-ref .body{max-height:190px;overflow:auto;margin-top:6px}
+  .ed-ref h4{margin:8px 0 2px;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+  .ed-ref p{margin:2px 0}
+  .ed-ref code{color:var(--text);font-family:ui-monospace,SFMono-Regular,Consolas,Menlo,monospace}
+  #chart{position:absolute;inset:0}
+  .legend{position:absolute;left:10px;top:8px;z-index:5;pointer-events:none;font-size:12px;text-shadow:0 1px 2px #000}
+  .legend .t{font-size:15px;font-weight:700;margin-right:8px}
+  .legend .k{color:var(--muted);margin-left:8px}
+  .legend .ind{margin-top:2px;color:var(--muted)}
+  .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:6;background:#0f121899;pointer-events:none}
+  .overlay.show{display:flex}
+  .overlay div{background:var(--panel);border:1px solid var(--line);padding:10px 14px;border-radius:8px;max-width:420px;text-align:center}
+  aside{border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+  aside h3{margin:0;padding:10px 12px 6px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+  .addrow{display:flex;gap:4px;padding:0 10px 8px}
+  .addrow input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 7px;text-transform:uppercase}
+  .wl{overflow:auto;flex:1}
+  .wl .row{display:grid;grid-template-columns:1fr auto auto 16px;gap:8px;align-items:center;padding:7px 12px;cursor:pointer;border-top:1px solid #1d222c}
+  .wl .row:hover{background:var(--panel2)}
+  .wl .row.active{background:#1f2633;box-shadow:inset 2px 0 var(--accent)}
+  .wl .s{font-weight:600}
+  .wl .p{font-variant-numeric:tabular-nums}
+  .wl .c{font-variant-numeric:tabular-nums;font-size:12px;min-width:58px;text-align:right}
+  .wl .x{color:var(--muted);opacity:0;border:0;background:none;cursor:pointer;padding:0}
+  .wl .row:hover .x{opacity:1}
+  .up{color:var(--up)} .down{color:var(--down)}
+  footer{grid-column:1/3;display:flex;gap:14px;align-items:center;padding:4px 10px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--muted);margin-right:5px}
+  .dot.ok{background:var(--up)} .dot.err{background:var(--down)} .dot.busy{background:var(--warn)}
+  .modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:50}
+  .modal.show{display:flex}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;width:min(460px,92vw)}
+  .card h2{margin:0 0 12px;font-size:16px}
+  .card label{display:block;margin:12px 0 4px;color:var(--muted);font-size:12px}
+  .card input,.card select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+  .card p{color:var(--muted);font-size:12px;margin:6px 0 0}
+  .card a{color:var(--accent)}
+  .card .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  @media (max-width:760px){
+    .app{grid-template-columns:1fr;grid-template-rows:auto 1fr 190px auto}
+    aside{border-left:0;border-top:1px solid var(--line)}
+    header,footer{grid-column:1}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">Chart<span>Desk</span></div>
+    <input id="symInput" class="sym" spellcheck="false" autocomplete="off" title="Type a symbol and press Enter">
+    <div id="tfGroup" class="group"></div>
+    <select id="chartType" class="btn" title="Chart type">
+      <option value="candles">Candles</option>
+      <option value="heikin">Heikin Ashi</option>
+      <option value="bars">Bars</option>
+      <option value="line">Line</option>
+      <option value="area">Area</option>
+    </select>
+    <div class="menu" id="indMenu">
+      <button class="btn" id="indBtn">Indicators ▾</button>
+      <div class="drop" id="indDrop"></div>
+    </div>
+    <button class="btn" id="hlineBtn" title="Click the chart to place a horizontal line">― H-Line</button>
+    <button class="btn" id="clearLinesBtn" title="Remove lines on this symbol">Clear lines</button>
+    <div class="spacer"></div>
+    <select id="providerSel" class="btn" title="Data source"></select>
+    <button class="btn" id="settingsBtn" title="Settings">⚙</button>
+  </header>
+
+  <main>
+    <div id="chart"></div>
+    <div class="legend" id="legend"></div>
+    <div class="overlay" id="overlay"><div id="overlayMsg"></div></div>
+    <div class="editor" id="editor">
+      <div class="row">
+        <input type="text" id="edName" maxlength="40" placeholder="Script name" spellcheck="false" autocomplete="off" aria-label="Script name">
+        <label class="row" title="Draw this script on the chart"><input type="checkbox" id="edOn"> Show</label>
+        <button class="btn" id="edClose" title="Close editor">✕</button>
+      </div>
+      <textarea id="edSrc" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Script"></textarea>
+      <div class="ed-msg" id="edMsg"></div>
+      <div class="ed-inputs" id="edInputs"></div>
+      <details class="ed-ref"><summary>Reference</summary><div class="body" id="edRef"></div></details>
+      <div class="row"><button class="btn" id="edDelete">Delete script</button></div>
+    </div>
+  </main>
+
+  <aside>
+    <h3>Watchlist <span id="wlNote" style="text-transform:none;letter-spacing:0"></span></h3>
+    <div class="addrow"><input id="wlAdd" placeholder="Add symbol…" spellcheck="false"><button class="btn" id="wlAddBtn">+</button></div>
+    <div class="wl" id="wl"></div>
+  </aside>
+
+  <footer>
+    <span><span class="dot" id="statusDot"></span><span id="statusText">Ready</span></span>
+    <span id="delayNote"></span>
+    <span id="tdDay" style="display:none"></span>
+    <span class="spacer" style="flex:1"></span>
+    <span id="updated"></span>
+    <span>Charts by <a href="https://www.tradingview.com/" style="color:var(--muted)">TradingView</a> Lightweight Charts™</span>
+  </footer>
+</div>
+
+<div class="modal" id="settings">
+  <div class="card">
+    <h2>Settings</h2>
+    <label for="tdKey">Twelve Data API key (stocks, ETFs, forex)</label>
+    <input id="tdKey" placeholder="paste your free key" spellcheck="false" autocomplete="off">
+    <p>Free key at <a href="https://twelvedata.com/register" target="_blank" rel="noopener">twelvedata.com/register</a> — no card needed. Free plan: 8 requests/min, 800/day, US markets, personal (non-display) use only. Your key stays in this browser.</p>
+    <label for="refreshSel">Auto-refresh</label>
+    <select id="refreshSel">
+      <option value="auto">Automatic (fits each source's rate limit)</option>
+      <option value="0">Off</option>
+    </select>
+    <div class="actions">
+      <button class="btn" id="settingsCancel">Close</button>
+      <button class="btn primary" id="settingsSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- The formula language for custom indicators. Self-contained: it defines window.Formula and nothing else. -->
+<script id="formula">
+/* ChartDesk Formula: a small series-based language for chart indicators.
+
+   A script is a list of lines, each either `name = expression` or a call such as plot(...).
+   Every value is a number, a piece of text, or a series holding one value per bar, and
+   arithmetic works on whole series at once. There are no loops and no access to the page,
+   so a script always finishes and can do nothing except compute numbers and ask for plots.
+
+   Usage:
+     const program = Formula.compile(source);          // throws Formula.FormulaError
+     const result  = program.run(bars, inputValues, { sessionKey });
+     // bars: [{ time, open, high, low, close, volume }], oldest first
+     // result: { plots: [{ title, color, width, style, pane, hline, values }], inputs: [...] }
+
+   It is self-contained: this block defines window.Formula and touches nothing else on the page.
+   (Under Node it sets module.exports instead; tests/formula.test.js loads it that way.)
+
+   In this order:
+     SETUP               limits, the error type, small helpers, the names the language knows
+     TOKENIZER           source text to tokens
+     PARSER              tokens to a tree, one statement per line
+     SERIES MATHS        helpers shared by the operators and the built-in functions
+     BUILT-IN FUNCTIONS  everything a script can call; this is also where the Reference text comes from
+     EVALUATOR           runs a parsed script against bars
+     PUBLIC API          compile(), and what the editor needs
+*/
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(); else root.Formula = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+'use strict';
+
+/* ============================================================================
+   SETUP - things the rest of the language leans on
+   ============================================================================ */
+
+/* ---- limits ---- */
+// Caps that keep any script small and quick. `work` is a budget of elementary steps for one run:
+// functions call c.spend() as they go, and a script that would exceed it is stopped with an error.
+const LIMITS = { source: 20000, statements: 400, nodes: 4000, depth: 60, length: 5000, plots: 32, inputs: 32, work: 2e8 };
+
+/* ---- errors ---- */
+// The only error a caller should see. `detail` is the message without the "Line N:" prefix.
+class FormulaError extends Error {
+  constructor(detail, line){ super(line ? `Line ${line}: ${detail}` : detail); this.name = 'FormulaError'; this.detail = detail; this.line = line || 0; }
+}
+
+/* ---- small helpers ---- */
+// A series is a plain array with one value per bar. Missing values are NaN ("na" in a script),
+// which is why the code tests `x !== x`: only NaN is unequal to itself.
+// A series of text (colours chosen bar by bar) is an array flagged with `.str = true`.
+const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const isS = Array.isArray;
+const isStr = v => typeof v === 'string' || (isS(v) && v.str === true);
+const truthy = x => x === x && x !== 0 && x !== null; // na counts as false
+const fill = (n, v) => new Array(n).fill(v);
+
+/* ---- names the language knows ---- */
+const COLORS = { red:'#f23645', green:'#22ab94', blue:'#3d8bfd', orange:'#ff8a3d', yellow:'#f5c542', purple:'#b07cff', teal:'#2fb6c9', pink:'#ff6fb5', gray:'#7c8494', grey:'#7c8494', white:'#d6dae3' };
+const PALETTE = ['#3d8bfd', '#ff8a3d', '#22ab94', '#b07cff', '#f5c542', '#2fb6c9', '#ff6fb5'];
+const WORDS = ['line', 'histogram', 'area', 'dashed', 'dotted', 'dots', 'main', 'below'];
+const SERIES_NAMES = ['open', 'high', 'low', 'close', 'volume', 'hl2', 'hlc3', 'ohlc4', 'tr', 'vwap', 'time', 'bar_index'];
+const RESERVED = new Set(SERIES_NAMES.concat(['and', 'or', 'not', 'true', 'false', 'na']));
+
+/* ============================================================================
+   TOKENIZER - source text to tokens
+   ============================================================================ */
+// A token is { t, v, line }: t is "num", "id", "str", "nl" (end of a statement), "end", or the
+// symbol itself. Newlines inside brackets are ignored, so a call can run over several lines.
+function tokenize(src){
+  const toks = [], two = ['==', '!=', '<=', '>=', '&&', '||'];
+  let i = 0, line = 1, depth = 0;
+  while (i < src.length) {
+    const c = src[i];
+    if (c === '\n') { if (!depth && toks.length && toks[toks.length-1].t !== 'nl') toks.push({ t:'nl', line }); line++; i++; continue; } // a line can continue inside brackets
+    if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
+    if (c === '/' && src[i+1] === '/') { while (i < src.length && src[i] !== '\n') i++; continue; }
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i+1] || ''))) {
+      const m = /^(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?/.exec(src.slice(i, i + 40));
+      toks.push({ t:'num', v:parseFloat(m[0]), line }); i += m[0].length; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) { let j = i + 1; while (j < src.length && /[A-Za-z0-9_]/.test(src[j])) j++; toks.push({ t:'id', v:src.slice(i, j), line }); i = j; continue; }
+    if (c === '"' || c === "'") {
+      let j = i + 1; while (j < src.length && src[j] !== c && src[j] !== '\n') j++;
+      if (src[j] !== c) throw new FormulaError('text is missing its closing quote', line);
+      toks.push({ t:'str', v:src.slice(i + 1, j), line }); i = j + 1; continue;
+    }
+    const pair = src.substr(i, 2);
+    if (two.includes(pair)) { toks.push({ t:pair, line }); i += 2; continue; }
+    if ('()[],?:+-*/%<>=!'.includes(c)) {
+      if (c === '(' || c === '[') depth++; else if ((c === ')' || c === ']') && depth) depth--;
+      toks.push({ t:c, line }); i++; continue;
+    }
+    throw new FormulaError(`unexpected character "${c}"`, line);
+  }
+  toks.push({ t:'nl', line }); toks.push({ t:'end', line });
+  return toks;
+}
+
+/* ============================================================================
+   PARSER - tokens to a tree, one statement per line
+   ============================================================================ */
+// Recursive descent. Every node has a kind `k`: num, str, id, un, bin, tern, idx (x[n]) or call.
+// The result is a list of { k:"assign", name, e } and { k:"expr", e } statements.
+function parse(src){
+  const toks = tokenize(src); let p = 0, depth = 0, nodes = 0;
+  const peek = () => toks[p], next = () => toks[p++];
+  const fail = (msg, t) => { throw new FormulaError(msg, (t || peek()).line); };
+  const show = t => t.t === 'nl' || t.t === 'end' ? 'the end of the line' : t.t === 'num' ? String(t.v) : t.t === 'id' ? `"${t.v}"` : t.t === 'str' ? 'text' : `"${t.t}"`;
+  const expect = (t, what) => { if (peek().t !== t) fail(`expected ${what || '"' + t + '"'} but found ${show(peek())}`); return next(); };
+  const node = n => { if (++nodes > LIMITS.nodes) fail('script is too long'); return n; };
+  const isWord = (t, w) => t.t === 'id' && t.v === w;
+  const deeper = f => { if (++depth > LIMITS.depth) fail('too many nested brackets'); const r = f(); depth--; return r; };
+
+  /* ---- expressions, loosest-binding first: ?: , or, and, not, comparisons, + -, * / %, unary, x[n] ---- */
+  const expr = () => deeper(ternary);
+  function ternary(){
+    const c = or(); if (peek().t !== '?') return c;
+    const t = next(), a = expr(); expect(':', '":" to finish the ? choice'); const b = expr();
+    return node({ k:'tern', c, a, b, line:t.line });
+  }
+  function or(){ let a = and(); while (peek().t === '||' || isWord(peek(), 'or')) { const t = next(); a = node({ k:'bin', op:'or', a, b:and(), line:t.line }); } return a; }
+  function and(){ let a = not(); while (peek().t === '&&' || isWord(peek(), 'and')) { const t = next(); a = node({ k:'bin', op:'and', a, b:not(), line:t.line }); } return a; }
+  function not(){ if (peek().t === '!' || isWord(peek(), 'not')) { const t = next(); return node({ k:'un', op:'not', a:deeper(not), line:t.line }); } return cmp(); }
+  function cmp(){ let a = add(); while (['==', '!=', '<', '<=', '>', '>='].includes(peek().t)) { const t = next(); a = node({ k:'bin', op:t.t, a, b:add(), line:t.line }); } return a; }
+  function add(){ let a = mul(); while (peek().t === '+' || peek().t === '-') { const t = next(); a = node({ k:'bin', op:t.t, a, b:mul(), line:t.line }); } return a; }
+  function mul(){ let a = unary(); while (peek().t === '*' || peek().t === '/' || peek().t === '%') { const t = next(); a = node({ k:'bin', op:t.t, a, b:unary(), line:t.line }); } return a; }
+  function unary(){
+    if (peek().t === '-' || peek().t === '+') { const t = next(), a = deeper(unary); return t.t === '-' ? node({ k:'un', op:'neg', a, line:t.line }) : a; }
+    return postfix();
+  }
+  function postfix(){
+    let a = primary();
+    while (peek().t === '[') { const t = next(), n = expr(); expect(']', '"]"'); a = node({ k:'idx', a, n, line:t.line }); }
+    return a;
+  }
+  function primary(){
+    const t = next();
+    if (t.t === 'num') return node({ k:'num', v:t.v });
+    if (t.t === 'str') return node({ k:'str', v:t.v });
+    if (t.t === '(') { const e = expr(); expect(')', '")"'); return e; }
+    if (t.t === 'id') return peek().t === '(' ? call(t) : node({ k:'id', name:t.v, line:t.line });
+    return fail(`unexpected ${show(t)}`, t);
+  }
+  function call(t){
+    next(); const args = [], named = {}; let sawNamed = false;
+    if (peek().t !== ')') for (;;) {
+      if (peek().t === 'id' && toks[p+1].t === '=') {
+        const k = next().v; next();
+        if (has(named, k)) fail(`"${k}" is given twice in ${t.v}()`);
+        named[k] = expr(); sawNamed = true;
+      } else { if (sawNamed) fail(`in ${t.v}(), put plain values before named ones`); args.push(expr()); }
+      if (peek().t === ',') { next(); continue; }
+      break;
+    }
+    expect(')', `")" to close ${t.v}(`);
+    return node({ k:'call', name:t.v, args, named, line:t.line });
+  }
+
+  /* ---- statements ---- */
+  const prog = [];
+  while (peek().t !== 'end') {
+    if (peek().t === 'nl') { next(); continue; }
+    const t = peek();
+    if (t.t === 'id' && toks[p+1].t === '=') {
+      if (RESERVED.has(t.v)) fail(`"${t.v}" is built in and cannot be reassigned; pick another name`);
+      next(); next(); prog.push({ k:'assign', name:t.v, e:expr(), line:t.line });
+    } else prog.push({ k:'expr', e:expr(), line:t.line });
+    if (peek().t !== 'nl') fail(`unexpected ${show(peek())}`);
+    if (prog.length > LIMITS.statements) fail('script has too many lines');
+  }
+  return prog;
+}
+
+/* ============================================================================
+   SERIES MATHS - helpers shared by the operators and the built-in functions
+   ============================================================================ */
+
+/* ---- operators, applied to numbers or whole series alike ---- */
+const map1 = (a, f) => isS(a) ? a.map(f) : f(a);
+function map2(a, b, f){
+  if (isS(a)) return isS(b) ? a.map((x, i) => f(x, b[i])) : a.map(x => f(x, b));
+  return isS(b) ? b.map(y => f(a, y)) : f(a, b);
+}
+const cmpOp = f => (x, y) => x !== x || y !== y ? NaN : +f(x, y);
+const OPS = {
+  '+': (x, y) => x + y, '-': (x, y) => x - y, '*': (x, y) => x * y,
+  '/': (x, y) => y === 0 ? NaN : x / y, '%': (x, y) => y === 0 ? NaN : x % y,
+  '<': cmpOp((x, y) => x < y), '<=': cmpOp((x, y) => x <= y), '>': cmpOp((x, y) => x > y), '>=': cmpOp((x, y) => x >= y),
+  '==': cmpOp((x, y) => x === y), '!=': cmpOp((x, y) => x !== y),
+  and: (x, y) => +(truthy(x) && truthy(y)), or: (x, y) => +(truthy(x) || truthy(y)),
+};
+
+/* ---- windows and running averages ---- */
+// `c` is the run context made by run() below: c.n is the number of bars, c.S(name) a price series.
+// f(src, start, end) over each full window; na while the window is incomplete or holds an na
+function rolling(c, src, len, f){
+  c.spend(c.n * Math.min(len, c.n));
+  const out = fill(c.n, NaN); let lastBad = -1;
+  for (let i = 0; i < c.n; i++) { if (src[i] !== src[i]) lastBad = i; const s = i - len + 1; if (s >= 0 && lastBad < s) out[i] = f(src, s, i); }
+  return out;
+}
+const winSum = (a, s, e) => { let t = 0; for (let i = s; i <= e; i++) t += a[i]; return t; };
+const winMean = (a, s, e) => winSum(a, s, e) / (e - s + 1);
+// exponential average seeded with the plain average of the first `len` values; na inputs are skipped
+function expAvg(c, src, len, k){
+  c.spend(c.n);
+  const out = fill(c.n, NaN); let e = NaN, cnt = 0, s = 0;
+  for (let i = 0; i < c.n; i++) {
+    const x = src[i]; if (x !== x) continue;
+    if (cnt < len) { s += x; if (++cnt === len) out[i] = e = s / len; }
+    else out[i] = e = x * k + e * (1 - k);
+  }
+  return out;
+}
+const shift = (src, k) => { const out = src.map((_, i) => i - k >= 0 ? src[i - k] : NaN); return out; };
+function trueRange(c){
+  const h = c.S('high'), l = c.S('low'), cl = c.S('close');
+  return h.map((x, i) => i ? Math.max(x - l[i], Math.abs(x - cl[i-1]), Math.abs(l[i] - cl[i-1])) : x - l[i]);
+}
+
+/* ============================================================================
+   BUILT-IN FUNCTIONS - everything a script can call
+   ============================================================================ */
+
+/* ---- registering a function ---- */
+// def(group, name, params, doc, impl) adds a function. `group` and `doc` become its Reference entry.
+// Each param is prm(name, type, { d: default }); a default makes it optional. The evaluator checks and
+// converts arguments by type before calling impl(c, ...args):
+//   series  a series (a single number is spread over every bar)     num     a number or a series
+//   scalar  a single number                                         len     a whole number of bars, 1 or more
+//   text    text in quotes                                          word    one of the bare words in `of`
+//   color   a colour name or code, or a series of them
+const FUNCS = Object.create(null), REFERENCE = [];
+const prm = (n, t, extra) => Object.assign({ n, t }, extra);
+const SRC = prm('src', 'series'), LEN = prm('length', 'len');
+function def(group, name, params, doc, impl, variadic){
+  const sig = variadic ? `${name}(a, b, ...)` : `${name}(${params.map(q => 'd' in q ? `[${q.n}]` : q.n).join(', ')})`;
+  FUNCS[name] = { name, params, impl, variadic: !!variadic, sig };
+  REFERENCE.push({ group, sig, doc });
+}
+
+/* ---- averages ---- */
+def('Averages', 'sma', [SRC, LEN], 'Simple moving average.', (c, src, len) => rolling(c, src, len, winMean));
+def('Averages', 'ema', [SRC, LEN], 'Exponential moving average.', (c, src, len) => expAvg(c, src, len, 2 / (len + 1)));
+def('Averages', 'rma', [SRC, LEN], "Wilder's smoothed average, as used inside RSI and ATR.", (c, src, len) => expAvg(c, src, len, 1 / len));
+def('Averages', 'wma', [SRC, LEN], 'Weighted moving average; recent bars count more.', (c, src, len) =>
+  rolling(c, src, len, (a, s, e) => { let t = 0, w = 0; for (let i = s; i <= e; i++) { const k = i - s + 1; t += a[i] * k; w += k; } return t / w; }));
+
+/* ---- windows ---- */
+def('Windows', 'sum', [SRC, LEN], 'Sum of the last `length` bars.', (c, src, len) => rolling(c, src, len, winSum));
+def('Windows', 'highest', [SRC, LEN], 'Highest value in the last `length` bars.', (c, src, len) => rolling(c, src, len, (a, s, e) => { let m = a[s]; for (let i = s + 1; i <= e; i++) if (a[i] > m) m = a[i]; return m; }));
+def('Windows', 'lowest', [SRC, LEN], 'Lowest value in the last `length` bars.', (c, src, len) => rolling(c, src, len, (a, s, e) => { let m = a[s]; for (let i = s + 1; i <= e; i++) if (a[i] < m) m = a[i]; return m; }));
+def('Windows', 'stdev', [SRC, LEN], 'Standard deviation over the last `length` bars.', (c, src, len) =>
+  rolling(c, src, len, (a, s, e) => { const m = winMean(a, s, e); let t = 0; for (let i = s; i <= e; i++) t += (a[i] - m) ** 2; return Math.sqrt(t / (e - s + 1)); }));
+def('Windows', 'linreg', [SRC, LEN], 'End point of a straight line fitted to the last `length` bars.', (c, src, len) =>
+  rolling(c, src, len, (a, s, e) => {
+    const k = e - s + 1; if (k === 1) return a[e];
+    let sx = 0, sy = 0, sxy = 0, sxx = 0;
+    for (let i = s; i <= e; i++) { const x = i - s; sx += x; sy += a[i]; sxy += x * a[i]; sxx += x * x; }
+    const slope = (k * sxy - sx * sy) / (k * sxx - sx * sx);
+    return (sy - slope * sx) / k + slope * (k - 1);
+  }));
+def('Windows', 'cum', [SRC], 'Running total since the first bar.', (c, src) => { let t = 0; return src.map(x => (t += x === x ? x : 0)); });
+
+/* ---- momentum ---- */
+def('Momentum', 'change', [SRC, prm('length', 'len', { d:1 })], 'Difference from `length` bars ago (1 if left out).', (c, src, len) => src.map((x, i) => i - len >= 0 ? x - src[i - len] : NaN));
+def('Momentum', 'roc', [SRC, LEN], 'Percent change from `length` bars ago.', (c, src, len) => src.map((x, i) => i - len >= 0 && src[i - len] !== 0 ? 100 * (x - src[i - len]) / src[i - len] : NaN));
+def('Momentum', 'rsi', [SRC, LEN], 'Relative strength index, 0 to 100.', (c, src, len) => {
+  const ch = src.map((x, i) => i ? x - src[i-1] : NaN);
+  const up = expAvg(c, ch.map(d => d !== d ? NaN : Math.max(d, 0)), len, 1 / len), dn = expAvg(c, ch.map(d => d !== d ? NaN : Math.max(-d, 0)), len, 1 / len);
+  return up.map((u, i) => { const d = dn[i]; return u !== u || d !== d ? NaN : d === 0 ? 100 : 100 - 100 / (1 + u / d); });
+});
+def('Momentum', 'stoch', [SRC, prm('high', 'series'), prm('low', 'series'), LEN], 'Where `src` sits in the high-low range of the last `length` bars, 0 to 100.', (c, src, hi, lo, len) => {
+  const hh = FUNCS.highest.impl(c, hi, len), ll = FUNCS.lowest.impl(c, lo, len);
+  return src.map((x, i) => hh[i] === ll[i] ? NaN : 100 * (x - ll[i]) / (hh[i] - ll[i]));
+});
+
+/* ---- trend and volatility ---- */
+// These two carry state from bar to bar, which a script cannot do itself, so they are built in.
+def('Trend and volatility', 'atr', [LEN], 'Average true range.', (c, len) => expAvg(c, c.S('tr'), len, 1 / len));
+def('Trend and volatility', 'supertrend', [prm('factor', 'scalar'), LEN], 'SuperTrend line: below price in an uptrend, above it in a downtrend.', (c, factor, len) => {
+  const atr = expAvg(c, c.S('tr'), len, 1 / len), h = c.S('high'), l = c.S('low'), cl = c.S('close'), out = fill(c.n, NaN);
+  let up = NaN, lo = NaN, trend = 1, started = false;
+  for (let i = 0; i < c.n; i++) {
+    if (atr[i] !== atr[i]) continue;
+    const mid = (h[i] + l[i]) / 2, u = mid + factor * atr[i], d = mid - factor * atr[i];
+    if (!started) { up = u; lo = d; started = true; }
+    else {
+      lo = d > lo || cl[i-1] < lo ? d : lo;
+      up = u < up || cl[i-1] > up ? u : up;
+      if (trend === 1 && cl[i] < lo) trend = -1; else if (trend === -1 && cl[i] > up) trend = 1;
+    }
+    out[i] = trend === 1 ? lo : up;
+  }
+  return out;
+});
+def('Trend and volatility', 'sar', [prm('start', 'scalar', { d:0.02 }), prm('step', 'scalar', { d:0.02 }), prm('max', 'scalar', { d:0.2 })], 'Parabolic SAR stop-and-reverse level.', (c, start, step, max) => {
+  const h = c.S('high'), l = c.S('low'), cl = c.S('close'), out = fill(c.n, NaN); if (c.n < 2) return out;
+  let rising = cl[1] >= cl[0], ep = rising ? h[0] : l[0], sar = rising ? l[0] : h[0], af = start;
+  for (let i = 1; i < c.n; i++) {
+    sar += af * (ep - sar);
+    if (rising) {
+      sar = Math.min(sar, l[i-1], l[Math.max(0, i-2)]);
+      if (l[i] < sar) { rising = false; sar = Math.max(ep, h[i-1], h[i]); ep = l[i]; af = start; }
+      else if (h[i] > ep) { ep = h[i]; af = Math.min(max, af + step); }
+    } else {
+      sar = Math.max(sar, h[i-1], h[Math.max(0, i-2)]);
+      if (h[i] > sar) { rising = true; sar = Math.min(ep, l[i-1], l[i]); ep = h[i]; af = start; }
+      else if (l[i] < ep) { ep = l[i]; af = Math.min(max, af + step); }
+    }
+    out[i] = sar;
+  }
+  return out;
+});
+
+/* ---- signals ---- */
+const A = prm('a', 'series'), B = prm('b', 'series');
+def('Signals', 'crossover', [A, B], 'True on the bar where `a` rises above `b`.', (c, a, b) => a.map((x, i) => +(i > 0 && x > b[i] && a[i-1] <= b[i-1])));
+def('Signals', 'crossunder', [A, B], 'True on the bar where `a` falls below `b`.', (c, a, b) => a.map((x, i) => +(i > 0 && x < b[i] && a[i-1] >= b[i-1])));
+def('Signals', 'cross', [A, B], 'True on the bar where `a` and `b` cross either way.', (c, a, b) => a.map((x, i) => +(i > 0 && ((x > b[i] && a[i-1] <= b[i-1]) || (x < b[i] && a[i-1] >= b[i-1])))));
+def('Signals', 'barssince', [prm('cond', 'series')], 'Bars since `cond` was last true.', (c, cond) => { let k = NaN; return cond.map(x => (k = truthy(x) ? 0 : k + 1)); });
+def('Signals', 'valuewhen', [prm('cond', 'series'), SRC], 'Value of `src` the last time `cond` was true.', (c, cond, src) => { let v = NaN; return cond.map((x, i) => (v = truthy(x) ? src[i] : v)); });
+
+/* ---- maths ---- */
+const X = prm('x', 'num');
+[['abs', 'Absolute value.', Math.abs], ['sqrt', 'Square root.', x => x < 0 ? NaN : Math.sqrt(x)], ['log', 'Natural logarithm.', x => x <= 0 ? NaN : Math.log(x)], ['exp', 'e to the power x.', Math.exp],
+ ['round', 'Nearest whole number.', Math.round], ['floor', 'Round down.', Math.floor], ['ceil', 'Round up.', Math.ceil], ['sign', '-1, 0 or 1.', Math.sign]]
+  .forEach(([name, doc, f]) => def('Maths', name, [X], doc, (c, x) => map1(x, v => f(v))));
+def('Maths', 'pow', [prm('base', 'num'), prm('exponent', 'num')], 'Base raised to a power.', (c, a, b) => map2(a, b, (x, y) => Math.pow(x, y)));
+def('Maths', 'max', [], 'Largest of the values, bar by bar.', (c, ...v) => v.reduce((a, b) => map2(a, b, (x, y) => x !== x || y !== y ? NaN : Math.max(x, y))), true);
+def('Maths', 'min', [], 'Smallest of the values, bar by bar.', (c, ...v) => v.reduce((a, b) => map2(a, b, (x, y) => x !== x || y !== y ? NaN : Math.min(x, y))), true);
+def('Maths', 'avg', [], 'Average of the values, bar by bar.', (c, ...v) => map1(v.reduce((a, b) => map2(a, b, (x, y) => x + y)), x => x / v.length), true);
+def('Maths', 'nz', [X, prm('value', 'num', { d:0 })], 'Replaces na with `value` (0 if left out).', (c, x, r) => map2(x, r, (a, b) => a !== a ? b : a));
+def('Maths', 'na', [X], 'True where `x` has no value.', (c, x) => map1(x, v => +(v !== v)));
+
+/* ---- output: plot, hline, input ---- */
+// These record what the script asks for on the run context; the app does the drawing.
+def('Output', 'plot', [prm('value', 'series'), prm('title', 'text', { d:'' }), prm('color', 'color', { d:null }), prm('width', 'scalar', { d:1 }),
+  prm('style', 'word', { d:'line', of:['line', 'dashed', 'dotted', 'dots', 'histogram', 'area'] }), prm('pane', 'word', { d:'main', of:['main', 'below'] })],
+  'Draws a series. `color` may differ bar by bar, e.g. `x > 0 ? green : red`. `style` is line, dashed, dotted, dots, histogram or area; dots suits signals that appear on single bars. `pane` is main (on the price chart) or below. Each plot needs its own `pane=below`: without it a plot goes on the price chart, even right after a plot that is below.',
+  (c, value, title, color, width, style, pane) => {
+    if (c.plots.length >= LIMITS.plots) c.fail(`a script can draw at most ${LIMITS.plots} plots and lines`);
+    c.lastPane = pane;
+    c.plots.push({ title:title.slice(0, 40), color: color || PALETTE[c.plots.filter(q => !q.hline).length % PALETTE.length], width:Math.min(4, Math.max(1, Math.round(width) || 1)), style, pane, hline:false, values:value });
+    return value;
+  });
+def('Output', 'hline', [prm('value', 'scalar'), prm('title', 'text', { d:'' }), prm('color', 'color', { d:COLORS.gray }), prm('style', 'word', { d:'dashed', of:['line', 'dashed', 'dotted'] }), prm('pane', 'word', { d:null, of:['main', 'below'] })],
+  'Draws a level line. It goes in the same pane as the plot before it unless `pane` says otherwise.',
+  (c, value, title, color, style, pane) => {
+    if (c.plots.length >= LIMITS.plots) c.fail(`a script can draw at most ${LIMITS.plots} plots and lines`);
+    if (isS(color)) c.fail('the color of hline() must be a single colour');
+    c.plots.push({ title:title.slice(0, 40), color, width:1, style, pane: pane || c.lastPane, hline:true, values:fill(c.n, value) });
+    return value;
+  });
+def('Output', 'input', [prm('value', 'scalar'), prm('title', 'text', { d:'' }), prm('min', 'scalar', { d:null }), prm('max', 'scalar', { d:null }), prm('step', 'scalar', { d:null })],
+  'A number the user can change without editing the script. `value` is the default.',
+  (c, def_, title, min, max, step) => {
+    if (!isFinite(def_)) c.fail('input() needs a number as its default');
+    if (c.inputs.length >= LIMITS.inputs) c.fail(`a script can have at most ${LIMITS.inputs} inputs`);
+    const key = (title || 'Input ' + (c.inputs.length + 1)).slice(0, 40);
+    if (c.inputs.some(q => q.key === key)) c.fail(`two inputs are both called "${key}"; give each its own title`);
+    let v = c.inputValues && has(c.inputValues, key) ? c.inputValues[key] : def_;
+    if (typeof v !== 'number' || !isFinite(v)) v = def_;
+    if (min != null && min === min && v < min) v = min;
+    if (max != null && max === max && v > max) v = max;
+    c.inputs.push({ key, title:key, value:v, def:def_, min, max, step });
+    return v;
+  });
+
+/* ---- colours ---- */
+// Turns a colour name or a #rgb / #rrggbb code into #rrggbb, or fails with a readable message.
+function normColor(v, fail){
+  if (v == null) return null;
+  const s = String(v).trim().toLowerCase(); let m;
+  if (has(COLORS, s)) return COLORS[s];
+  if ((m = /^#([0-9a-f]{3})$/.exec(s))) return '#' + m[1].split('').map(ch => ch + ch).join('');
+  if (/^#[0-9a-f]{6}$/.test(s)) return s;
+  return fail(`"${String(v).slice(0, 30)}" is not a colour; use a name like red or a code like "#ff8800"`);
+}
+
+/* ============================================================================
+   EVALUATOR - runs a parsed script against bars
+   ============================================================================ */
+// `line` always holds the line being worked on, so any failure can say where it happened.
+function run(prog, bars, inputValues, opts){
+  const n = bars.length; let work = 0, line = 0;
+  const fail = msg => { throw new FormulaError(msg, line); };
+  const vars = new Map(), cache = new Map();
+
+  /* ---- price series, worked out the first time a script uses them ---- */
+  const col = k => () => bars.map(b => +b[k]);
+  const lazy = {
+    open: col('open'), high: col('high'), low: col('low'), close: col('close'),
+    volume: () => bars.map(b => +b.volume || 0), time: () => bars.map(b => b.time), bar_index: () => bars.map((_, i) => i),
+    hl2: () => S('high').map((h, i) => (h + S('low')[i]) / 2),
+    hlc3: () => S('high').map((h, i) => (h + S('low')[i] + S('close')[i]) / 3),
+    ohlc4: () => S('high').map((h, i) => (S('open')[i] + h + S('low')[i] + S('close')[i]) / 4),
+    tr: () => trueRange(c),
+    vwap: () => { // volume-weighted average price, restarting each session
+      const key = (opts && opts.sessionKey) || (t => Math.floor(t / 86400)), h = S('high'), l = S('low'), cl = S('close'), vol = S('volume');
+      let day, pv = 0, v = 0;
+      return bars.map((b, i) => { const d = key(b.time); if (d !== day) { day = d; pv = 0; v = 0; } const tp = (h[i] + l[i] + cl[i]) / 3; pv += tp * vol[i]; v += vol[i]; return v ? pv / v : tp; });
+    },
+  };
+  function S(name){ if (!cache.has(name)) cache.set(name, lazy[name]()); return cache.get(name); }
+
+  /* ---- the run context handed to every built-in function ---- */
+  const c = { n, S, plots:[], inputs:[], inputValues, lastPane:'main', fail,
+    spend(k){ work += k; if (work > LIMITS.work) fail('this script does too much work; try shorter lengths'); } };
+
+  /* ---- checking and converting arguments ---- */
+  const numeric = (v, what) => isStr(v) ? fail(`${what} needs numbers, not text or a colour`) : v;
+
+  function coerce(v, q, f){
+    const where = `${q.n} in ${f.name}()`;
+    switch (q.t) {
+      case 'series': numeric(v, where); return isS(v) ? v : fill(n, v);
+      case 'num': return numeric(v, where);
+      case 'scalar': if (typeof v !== 'number') fail(`${where} must be a single number${isS(v) ? ', not a series' : ''}`); return v;
+      case 'len': {
+        if (typeof v !== 'number') fail(`${where} must be a single whole number${isS(v) ? ', not a series' : ''}`);
+        if (!(v >= 1 && v <= LIMITS.length)) fail(`${where} must be between 1 and ${LIMITS.length}`);
+        return Math.floor(v);
+      }
+      case 'text': if (typeof v !== 'string') fail(`${where} must be text in quotes`); return v;
+      case 'word': if (typeof v !== 'string' || !q.of.includes(v)) fail(`${where} must be one of: ${q.of.join(', ')}`); return v;
+      case 'color': {
+        if (typeof v === 'string') return normColor(v, fail);
+        if (isS(v) && v.str) { const memo = new Map(); return v.map(x => { if (x == null) return null; if (!memo.has(x)) memo.set(x, normColor(x, fail)); return memo.get(x); }); }
+        return fail(`${where} must be a colour such as red or "#ff8800"`);
+      }
+    }
+    return v;
+  }
+
+  /* ---- calling a function ---- */
+  function call(nd){
+    line = nd.line;
+    if (!has(FUNCS, nd.name) && !(nd.name in FUNCS)) fail(vars.has(nd.name) || has(lazy, nd.name) ? `"${nd.name}" is a value, not a function` : `unknown function "${nd.name}"`);
+    const f = FUNCS[nd.name], pos = nd.args.map(ev), named = {};
+    for (const k in nd.named) named[k] = ev(nd.named[k]);
+    line = nd.line;
+    if (f.variadic) {
+      if (Object.keys(named).length) fail(`${f.name}() does not take named settings`);
+      if (pos.length < 2) fail(`${f.name}() needs at least two values`);
+      c.spend(n * pos.length);
+      return f.impl(c, ...pos.map((v, i) => numeric(v, `value ${i + 1} in ${f.name}()`)));
+    }
+    if (pos.length > f.params.length) fail(`${f.name}() takes at most ${f.params.length} value${f.params.length === 1 ? '' : 's'}: ${f.sig}`);
+    for (const k in named) if (!f.params.some(q => q.n === k)) fail(`${f.name}() has no setting called "${k}": ${f.sig}`);
+    const args = f.params.map((q, i) => {
+      let v = i < pos.length ? pos[i] : undefined;
+      if (has(named, q.n)) { if (v !== undefined) fail(`"${q.n}" is given twice in ${f.name}()`); v = named[q.n]; }
+      if (v === undefined) { if (!('d' in q)) fail(`${f.name}() needs ${q.n}: ${f.sig}`); return q.d; }
+      return coerce(v, q, f);
+    });
+    c.spend(n);
+    return f.impl(c, ...args);
+  }
+
+  /* ---- working out one node of the tree ---- */
+  function ev(nd){
+    switch (nd.k) {
+      case 'num': case 'str': return nd.v;
+      case 'id': {
+        const k = nd.name;
+        if (vars.has(k)) return vars.get(k);
+        if (has(lazy, k)) return S(k);
+        if (has(COLORS, k)) return COLORS[k];
+        if (WORDS.includes(k)) return k;
+        if (k === 'true') return 1; if (k === 'false') return 0; if (k === 'na') return NaN;
+        line = nd.line;
+        return fail(k in FUNCS ? `"${k}" is a function; write ${FUNCS[k].sig}` : `unknown name "${k}"`);
+      }
+      case 'un': {
+        const a = ev(nd.a); line = nd.line; numeric(a, nd.op === 'neg' ? '"-"' : '"not"');
+        return nd.op === 'neg' ? map1(a, x => -x) : map1(a, x => truthy(x) ? 0 : 1);
+      }
+      case 'bin': {
+        const a = ev(nd.a), b = ev(nd.b); line = nd.line;
+        if ((nd.op === '==' || nd.op === '!=') && typeof a === 'string' && typeof b === 'string') return +((a === b) === (nd.op === '=='));
+        numeric(a, `"${nd.op}"`); numeric(b, `"${nd.op}"`);
+        if (isS(a) || isS(b)) c.spend(n);
+        return map2(a, b, OPS[nd.op]);
+      }
+      case 'tern': {
+        const cond = ev(nd.c), a = ev(nd.a), b = ev(nd.b); line = nd.line;
+        numeric(cond, 'the condition before "?"');
+        const blank = v => typeof v === 'number' && v !== v, sa = isStr(a), sb = isStr(b), text = sa || sb;
+        if (sa !== sb && !blank(a) && !blank(b)) fail('both choices after "?" must be the same kind of value');
+        if (!isS(cond)) return truthy(cond) ? a : b;
+        c.spend(n);
+        const out = new Array(n);
+        for (let i = 0; i < n; i++) { const pick = truthy(cond[i]) ? a : b, v = isS(pick) ? pick[i] : pick; out[i] = text && typeof v !== 'string' ? null : v; }
+        if (text) out.str = true;
+        return out;
+      }
+      case 'idx': {
+        const a = ev(nd.a), k = ev(nd.n); line = nd.line;
+        if (typeof k !== 'number' || !(k >= 0 && k <= LIMITS.length) || Math.floor(k) !== k) fail('the number in [ ] must be a whole number of bars back, 0 or more');
+        if (!isS(a)) return a;
+        c.spend(n);
+        const out = a.map((_, i) => i - k >= 0 ? a[i - k] : (a.str ? null : NaN));
+        if (a.str) out.str = true;
+        return out;
+      }
+      case 'call': return call(nd);
+    }
+    return fail('internal error');
+  }
+
+  /* ---- running the statements in order ---- */
+  try {
+    for (const st of prog) { line = st.line; const v = ev(st.e); if (st.k === 'assign') vars.set(st.name, v); }
+  } catch (e) {
+    if (e instanceof FormulaError) throw e;
+    throw new FormulaError(e instanceof RangeError ? 'this line is too deeply nested' : 'could not be worked out', line);
+  }
+  return { plots:c.plots, inputs:c.inputs };
+}
+
+/* ============================================================================
+   PUBLIC API - compile(), and what the editor needs
+   ============================================================================ */
+// compile() reads the script once; the program it returns can be run again and again as bars change.
+function compile(source){
+  const src = String(source == null ? '' : source);
+  if (src.length > LIMITS.source) throw new FormulaError(`script is too long (the limit is ${LIMITS.source} characters)`);
+  let prog;
+  try { prog = parse(src); }
+  catch (e) { if (e instanceof FormulaError) throw e; throw new FormulaError('script could not be read'); }
+  return { run: (bars, inputValues, opts) => run(prog, Array.isArray(bars) ? bars : [], inputValues || {}, opts || {}) };
+}
+
+// reference, series and colors feed the Reference panel in the script editor.
+return { compile, FormulaError, reference: REFERENCE, series: SERIES_NAMES.slice(), colors: Object.keys(COLORS).filter(k => k !== 'grey'), limits: LIMITS };
+});
+</script>
+
+<!-- The app. -->
+<script>
+(() => {
+'use strict';
+
+/* The app, in this order:
+     SETUP          charting library check, storage, small helpers
+     DATA SOURCES   Twelve Data credit budget and queue, then the providers
+     INDICATORS     the maths, and the list of built-in indicators
+     STATE          settings, the current chart, chart links
+     SCRIPT ENGINE  example scripts, saved scripts, compiling and running
+     CHART          the chart, its series, the legend, loading and refreshing bars
+     UI             status line, watchlist, toolbar, script editor, settings, keyboard
+     START
+   Each area has one banner like the one below; parts of an area are marked with a ---- name ---- comment.
+   The formula language itself is the script block above this one. */
+
+/* ============================================================================
+   SETUP - things everything else leans on
+   ============================================================================ */
+
+/* ---- charting library ---- */
+const LC = window.LightweightCharts;
+if (!LC) { document.getElementById('overlayMsg').textContent = 'Could not load the charting library. Check your internet connection and reload.'; document.getElementById('overlay').classList.add('show'); return; }
+
+/* ---- storage ---- */
+const store = {
+  get(k, d){ try { const v = localStorage.getItem('chartdesk.'+k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem('chartdesk.'+k, JSON.stringify(v)); } catch {} }
+};
+
+/* ---- helpers ---- */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const SYM_RE = /^[A-Z0-9.\-\/:_]{1,24}$/; // symbols arriving via a link must look like tickers
+const fmt = (v) => {
+  if (v == null || !isFinite(v)) return '—';
+  const a = Math.abs(v);
+  const d = a >= 1000 ? 2 : a >= 1 ? 2 : a >= 0.01 ? 4 : 6;
+  return v.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+};
+const fmtVol = v => v == null || !isFinite(v) ? '—' : v >= 1e9 ? (v/1e9).toFixed(2)+'B' : v >= 1e6 ? (v/1e6).toFixed(2)+'M' : v >= 1e3 ? (v/1e3).toFixed(1)+'K' : v.toFixed(v < 10 ? 3 : 0);
+const pctCls = v => v > 0 ? 'up' : v < 0 ? 'down' : '';
+const pctTxt = v => v == null || !isFinite(v) ? '—' : (v > 0 ? '+' : '') + v.toFixed(2) + '%';
+async function getJSON(url){
+  const r = await fetch(url);
+  let j; try { j = await r.json(); } catch { throw new Error('Bad response ('+r.status+')'); }
+  if (!r.ok) throw new Error((j && (j.message || j.error)) || ('HTTP '+r.status));
+  return j;
+}
+
+/* ============================================================================
+   DATA SOURCES - where bars and quotes come from
+   ============================================================================ */
+
+/* ---- Twelve Data credits: the per-minute log (8 a minute) ---- */
+// The log of spent credits is kept in localStorage, so a reload or a second tab shares the same
+// budget instead of starting a fresh one.
+const TD_LIMIT = 8, TD_WINDOW = 61000, TD_CHART_RESERVE = 2, TD_QUOTE_BATCH = 3;
+let tdMem = []; // fallback copy, for when localStorage is unavailable
+function tdSpent(now){ // timestamps of credits spent in the current window, oldest first
+  const saved = store.get('tdLog', null);
+  return (Array.isArray(saved) ? saved : tdMem).filter(t => typeof t === 'number' && now - t < TD_WINDOW && t <= now + 5000).sort((a,b) => a - b);
+}
+function tdSave(log){ tdMem = log; store.set('tdLog', log); }
+
+/* ---- Twelve Data credits: the daily allowance (800 a day) ---- */
+// Daily allowance: counted per UTC day in this browser, shown in the footer, with a warning from 80%.
+const TD_DAY_LIMIT = 800, TD_DAY_WARN = 640;
+let tdDayMem = null;
+const tdToday = () => new Date().toISOString().slice(0, 10);
+function tdDayUsed(){ const v = store.get('tdDay', null) || tdDayMem; return v && v.d === tdToday() && v.n > 0 ? v.n : 0; }
+function tdDaySet(n){ tdDayMem = { d:tdToday(), n }; store.set('tdDay', tdDayMem); tdDayShow(); }
+function tdDayShow(){
+  const el = $('tdDay'), n = tdDayUsed();
+  el.style.display = state.provider === 'twelvedata' && settings.tdKey ? '' : 'none';
+  el.textContent = n >= TD_DAY_LIMIT ? `Daily limit of ${TD_DAY_LIMIT} credits reached · resets 00:00 UTC` : n >= TD_DAY_WARN ? `⚠ ${n} of ${TD_DAY_LIMIT} daily credits used` : `${n} / ${TD_DAY_LIMIT} credits today`;
+  el.style.color = n >= TD_DAY_LIMIT ? 'var(--down)' : n >= TD_DAY_WARN ? 'var(--warn)' : '';
+  el.title = 'Twelve Data credits spent from this browser today. The free plan allows ' + TD_DAY_LIMIT + ' a day; the count restarts at midnight UTC. Turn off auto-refresh in Settings to spend fewer.';
+}
+// A refusal for the day (not the minute): waiting a minute will not help, so say so instead of retrying.
+function tdDayRefused(j){
+  if (j.code !== 429 || !/\b(day|daily)\b/i.test(j.message || '')) return;
+  tdDaySet(Math.max(tdDayUsed(), TD_DAY_LIMIT));
+  throw new Error(`Twelve Data's daily limit of ${TD_DAY_LIMIT} credits is used up. It resets at midnight UTC.`);
+}
+function tdExhausted(){ tdSave(Array(TD_LIMIT).fill(Date.now())); } // the server says the minute is used up
+
+/* ---- Twelve Data credits: the request queue ---- */
+// Every Twelve Data request asks this queue for its credits first. Waiting requests are served by
+// kind, then in order of arrival, and a kind may not touch the credits reserved for those above it:
+//   user    - a chart the user asked for (symbol, timeframe, source): may spend any free credit
+//   refresh - the minute refresh and older bars on scroll-back: leaves 1 credit for the user
+//   quotes  - the watchlist: leaves TD_CHART_RESERVE, and settles for fewer symbols than it asked for
+// A request whose `alive()` turns false while it waits (the user moved on) is dropped unspent.
+const TD_KINDS = { user:{ pri:0, reserve:0 }, refresh:{ pri:1, reserve:1 }, quotes:{ pri:2, reserve:TD_CHART_RESERVE, flexible:true } };
+const tdQueue = []; let tdTimer = null, tdSeq = 0;
+function tdAcquire(kind, cost = 1, alive){ // resolves with the number of credits spent
+  return new Promise((resolve, reject) => { tdQueue.push({ ...TD_KINDS[kind], cost, alive, resolve, reject, seq:tdSeq++ }); tdPump(); });
+}
+function tdPump(){
+  clearTimeout(tdTimer); tdTimer = null;
+  for (let i = tdQueue.length - 1; i >= 0; i--) { const it = tdQueue[i]; if (it.alive && !it.alive()) { tdQueue.splice(i, 1); it.reject(new Error('CANCELLED')); } }
+  tdQueue.sort((a, b) => a.pri - b.pri || a.seq - b.seq);
+  const now = Date.now(), log = tdSpent(now); let spent = 0;
+  while (tdQueue.length) {
+    const it = tdQueue[0], free = TD_LIMIT - it.reserve - log.length, n = it.flexible ? Math.min(it.cost, free) : it.cost;
+    if (n < 1 || n > free) break; // nothing behind it may jump ahead
+    for (let i = 0; i < n; i++) log.push(now);
+    spent += n; tdQueue.shift(); it.resolve(n);
+  }
+  if (spent) { tdSave(log); tdDaySet(tdDayUsed() + spent); }
+  if (!tdQueue.length) return;
+  if (tdQueue[0].pri === 0) setStatus('busy', 'Waiting for Twelve Data rate limit…'); // background waits stay quiet
+  tdTimer = setTimeout(tdPump, log.length ? Math.max(50, TD_WINDOW - (now - log[0]) + 50) : 1000);
+}
+async function tdGet(url){ // Twelve Data reports errors in the body; the caller reads `code` / `status`
+  const r = await fetch(url);
+  try { return await r.json(); } catch { throw new Error('Bad response ('+r.status+')'); }
+}
+
+/* ---- providers: Coinbase, Twelve Data, Demo ---- */
+const TF_LABELS = { '1m':'1m','5m':'5m','15m':'15m','1h':'1H','4h':'4H','6h':'6H','1D':'1D','1W':'1W' };
+const TF_SECONDS = { '1m':60,'5m':300,'15m':900,'1h':3600,'4h':14400,'6h':21600,'1D':86400,'1W':604800 };
+
+const providers = {
+  coinbase: {
+    label: 'Crypto · Coinbase (no key)',
+    delay: 'Coinbase public feed · near real-time',
+    tfs: ['1m','5m','15m','1h','6h','1D'],
+    refreshMs: 15000, quoteRefreshMs: 30000,
+    defaults: ['BTC-USD','ETH-USD','SOL-USD','XRP-USD','DOGE-USD','LTC-USD'],
+    norm: s => s.trim().toUpperCase().replace(/[\/_ ]/g,'-').replace(/^([A-Z0-9]+)$/,'$1-USD'),
+    async bars(sym, tf, before){ // `before` (unix seconds): fetch the page of history ending just before it
+      const g = TF_SECONDS[tf];
+      let range = '';
+      if (before) { const end = before - g, start = end - 299*g, iso = t => new Date(t*1000).toISOString(); range = `&start=${iso(start)}&end=${iso(end)}`; } // max 300 candles per request
+      const j = await getJSON(`https://api.exchange.coinbase.com/products/${encodeURIComponent(sym)}/candles?granularity=${g}${range}`);
+      if (!Array.isArray(j)) throw new Error(j.message || 'Unknown symbol');
+      return j.map(c => ({ time:c[0], low:+c[1], high:+c[2], open:+c[3], close:+c[4], volume:+c[5] })).sort((a,b)=>a.time-b.time);
+    },
+    async quotes(syms){
+      const out = {};
+      await Promise.all(syms.map(async s => {
+        try {
+          const j = await getJSON(`https://api.exchange.coinbase.com/products/${encodeURIComponent(s)}/stats`);
+          const last = +j.last, open = +j.open;
+          out[s] = { price:last, pct: open ? (last-open)/open*100 : null };
+        } catch { out[s] = null; }
+      }));
+      return out;
+    }
+  },
+
+  twelvedata: {
+    label: 'Stocks · Twelve Data (free key)',
+    delay: 'Twelve Data free tier · may be delayed · 8 req/min',
+    tfs: ['1m','5m','15m','1h','4h','1D','1W'],
+    refreshMs: 60000, quoteRefreshMs: 60000, // 1 chart + 3 quote credits a minute, half the allowance; the rest is for clicks
+    defaults: ['AAPL','MSFT','NVDA','SPY','QQQ','TSLA'],
+    needsKey: true,
+    sessionTz: 'America/New_York', // VWAP resets with the US trading day; regular-hours data starts each day at the 9:30 open
+    norm: s => s.trim().toUpperCase(),
+    interval: { '1m':'1min','5m':'5min','15m':'15min','1h':'1h','4h':'4h','1D':'1day','1W':'1week' },
+    async bars(sym, tf, before, kind = 'user', alive){ // `kind` and `alive` are for the credit queue
+      const key = settings.tdKey; if (!key) throw new Error('NO_KEY');
+      const endDate = before ? '&end_date=' + encodeURIComponent(new Date((before-1)*1000).toISOString().slice(0,19).replace('T',' ')) : '';
+      const u = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(sym)}&interval=${this.interval[tf]}&outputsize=500&order=ASC&timezone=UTC${endDate}&apikey=${encodeURIComponent(key)}`;
+      await tdAcquire(kind, 1, alive);
+      let j = await tdGet(u); tdDayRefused(j);
+      if (j.code === 429) { tdExhausted(); await tdAcquire(kind, 1, alive); j = await tdGet(u); tdDayRefused(j); } // credits spent elsewhere: wait out the minute, try once more
+      if (j.status === 'error') throw new Error(j.message || 'Request failed');
+      return (j.values || []).map(v => ({
+        time: Math.floor(Date.parse(v.datetime.length === 10 ? v.datetime+'T00:00:00Z' : v.datetime.replace(' ','T')+'Z')/1000),
+        open:+v.open, high:+v.high, low:+v.low, close:+v.close, volume: v.volume != null ? +v.volume : 0
+      })).filter(b => isFinite(b.time) && isFinite(b.close));
+    },
+    async quotes(syms){
+      const key = settings.tdKey; if (!key || !syms.length) return {};
+      // one credit per symbol: take what the budget allows, never the credits kept for the chart
+      const n = await tdAcquire('quotes', Math.min(syms.length, TD_QUOTE_BATCH), () => P() === this && settings.tdKey === key), list = syms.slice(0, n);
+      const j = await tdGet(`https://api.twelvedata.com/quote?symbol=${list.map(encodeURIComponent).join(',')}&apikey=${encodeURIComponent(key)}`);
+      tdDayRefused(j);
+      if (j.code === 429) { tdExhausted(); throw new Error(j.message || 'Rate limit'); }
+      if (j.status === 'error' && list.length > 1) throw new Error(j.message || 'Request failed'); // the whole batch failed; keep the old quotes
+      const out = {};
+      const one = (s, q) => { out[s] = q && q.status !== 'error' && q.close ? { price:+q.close, pct:+q.percent_change } : null; };
+      if (list.length === 1) one(list[0], j); else list.forEach(s => one(s, j[s]));
+      return out;
+    }
+  },
+
+  demo: {
+    label: 'Demo · simulated (offline)',
+    delay: 'Simulated prices — not real market data',
+    tfs: ['1m','5m','15m','1h','4h','1D'],
+    refreshMs: 2000, quoteRefreshMs: 2000,
+    defaults: ['DEMO','ACME','GLOBX','INITECH'],
+    norm: s => s.trim().toUpperCase(),
+    seed(sym){ let h = 2166136261; for (const ch of sym) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; },
+    rng(seed){ let a = seed || 1; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; },
+    cache: {},
+    series(sym, tf){
+      const k = sym+'|'+tf; if (this.cache[k]) return this.cache[k];
+      const step = TF_SECONDS[tf], n = 400, r = this.rng(this.seed(sym) + step);
+      const end = Math.floor(Date.now()/1000/step)*step;
+      let p = 20 + (this.seed(sym) % 400), out = [];
+      const vol = 0.004 * Math.sqrt(step/300);
+      for (let i = n; i > 0; i--) {
+        const t = end - i*step, o = p;
+        const c = Math.max(0.5, o * (1 + (r()-0.49) * vol * 2.2));
+        const h = Math.max(o,c) * (1 + r()*vol), l = Math.min(o,c) * (1 - r()*vol);
+        out.push({ time:t, open:o, high:h, low:l, close:c, volume: Math.round(5e4 + r()*2e5) }); p = c;
+      }
+      return (this.cache[k] = out);
+    },
+    tick(sym, tf){
+      const s = this.series(sym, tf), step = TF_SECONDS[tf], now = Math.floor(Date.now()/1000/step)*step;
+      let last = s[s.length-1];
+      if (now > last.time) { s.push(last = { time:now, open:last.close, high:last.close, low:last.close, close:last.close, volume:0 }); }
+      const c = Math.max(0.5, last.close * (1 + (Math.random()-0.5) * 0.0025));
+      last.close = c; last.high = Math.max(last.high, c); last.low = Math.min(last.low, c); last.volume += Math.round(Math.random()*3000);
+    },
+    older(sym, tf){ // extend the simulated series 300 bars further back
+      const s = this.series(sym, tf), step = TF_SECONDS[tf], vol = 0.004 * Math.sqrt(step/300), r = this.rng(this.seed(sym) + step + s.length);
+      const add = []; let first = s[0];
+      for (let i = 0; i < 300; i++) {
+        const c = first.open, o = Math.max(0.5, c / (1 + (r()-0.49) * vol * 2.2));
+        const h = Math.max(o,c) * (1 + r()*vol), l = Math.min(o,c) * (1 - r()*vol);
+        add.push(first = { time:first.time-step, open:o, high:h, low:l, close:c, volume: Math.round(5e4 + r()*2e5) });
+      }
+      s.unshift(...add.reverse());
+    },
+    async bars(sym, tf, before){ if (before) this.older(sym, tf); else this.tick(sym, tf); return this.series(sym, tf).map(b => ({...b})); },
+    async quotes(syms){
+      const out = {};
+      const tf = state.tf, per = Math.max(1, Math.round(86400 / TF_SECONDS[tf]));
+      syms.forEach(s => { this.tick(s, tf); const d = this.series(s, tf), a = d[d.length-1], ref = d[Math.max(0, d.length-1-per)];
+        out[s] = { price:a.close, pct:(a.close-ref.close)/ref.close*100 }; });
+      return out;
+    }
+  }
+};
+
+/* ============================================================================
+   INDICATORS - built-in calculations (scripts have their own, in the formula block above)
+   ============================================================================ */
+
+/* ---- maths ---- */
+function sma(vals, n){ const out = new Array(vals.length).fill(null); let s = 0; for (let i=0;i<vals.length;i++){ s += vals[i]; if (i>=n) s -= vals[i-n]; if (i>=n-1) out[i] = s/n; } return out; }
+function ema(vals, n){ const out = new Array(vals.length).fill(null), k = 2/(n+1); let e = null, s = 0;
+  for (let i=0;i<vals.length;i++){ if (i < n) { s += vals[i]; if (i === n-1) { e = s/n; out[i] = e; } } else { e = vals[i]*k + e*(1-k); out[i] = e; } } return out; }
+function stdev(vals, n, means){ return vals.map((_, i) => { if (means[i] == null) return null; let s = 0; for (let j=i-n+1;j<=i;j++) s += (vals[j]-means[i])**2; return Math.sqrt(s/n); }); }
+function rsi(vals, n=14){ const out = new Array(vals.length).fill(null); let g=0,l=0;
+  for (let i=1;i<vals.length;i++){ const d = vals[i]-vals[i-1], up = Math.max(d,0), dn = Math.max(-d,0);
+    if (i <= n) { g += up; l += dn; if (i === n) { g/=n; l/=n; out[i] = l === 0 ? 100 : 100 - 100/(1+g/l); } }
+    else { g = (g*(n-1)+up)/n; l = (l*(n-1)+dn)/n; out[i] = l === 0 ? 100 : 100 - 100/(1+g/l); } } return out; }
+const dayFmt = {};
+function vwapSession(bars, tz){ // resets when the calendar day changes in `tz` (UTC if omitted)
+  const f = tz && (dayFmt[tz] = dayFmt[tz] || new Intl.DateTimeFormat('en-CA', { timeZone:tz, year:'numeric', month:'2-digit', day:'2-digit' }));
+  let day = null, pv = 0, v = 0; return bars.map(b => { const d = f ? f.format(b.time*1000) : Math.floor(b.time/86400); if (d !== day) { day = d; pv = 0; v = 0; }
+    const tp = (b.high+b.low+b.close)/3, vol = b.volume || 0; pv += tp*vol; v += vol; return v ? pv/v : tp; }); }
+
+/* ---- the built-in indicators offered in the menu ---- */
+const IND = {
+  sma20:  { name:'SMA 20',  color:'#f5c542', pane:0 },
+  sma50:  { name:'SMA 50',  color:'#3d8bfd', pane:0 },
+  ema200: { name:'EMA 200', color:'#c36bff', pane:0 },
+  bb:     { name:'Bollinger 20,2', color:'#2fb6c9', pane:0 },
+  vwap:   { name:'VWAP (daily)', color:'#ff8a3d', pane:0 },
+  volume: { name:'Volume',  color:'#5b6475', pane:0 },
+  rsi:    { name:'RSI 14',  color:'#b07cff', pane:'rsi' },
+  macd:   { name:'MACD 12,26,9', color:'#3d8bfd', pane:'macd' },
+};
+
+/* ============================================================================
+   STATE - what the app remembers and what is on screen
+   ============================================================================ */
+
+/* ---- settings and the current chart ---- */
+const settings = Object.assign({ tdKey:'', refresh:'auto' }, store.get('settings', {}));
+let state = Object.assign({ provider:'coinbase', tf:'1h', type:'candles', ind:{ sma20:true, sma50:true, volume:true, rsi:false, macd:false, ema200:false, bb:false, vwap:false } }, store.get('state', {}));
+if (!providers[state.provider]) state.provider = 'coinbase';
+let watch = store.get('watch', {});
+for (const k in providers) if (!Array.isArray(watch[k])) watch[k] = providers[k].defaults.slice();
+let symbols = store.get('symbols', {});
+let lines = store.get('lines', {}); // { 'provider:SYM': [prices] }
+let bars = [], mainSeries = null, indSeries = [], priceLineObjs = [], hlineMode = false;
+let refreshTimer = null, quoteTimer = null, loadToken = 0, userLoad = 0;
+const P = () => providers[state.provider];
+const sym = () => symbols[state.provider] || P().defaults[0];
+const saveState = () => { store.set('state', state); store.set('symbols', symbols); };
+const curKey = () => state.provider + ':' + sym() + ':' + state.tf;
+let barsKey = '';            // which provider:symbol:timeframe `bars` currently holds
+let olderBusy = false, olderRetryAt = 0; const noOlder = {};
+
+/* ---- chart links: #provider/SYMBOL/timeframe ---- */
+function readHash(){
+  const [pv, s, tf] = location.hash.replace(/^#\/?/, '').split('/').map(x => { try { return decodeURIComponent(x); } catch { return ''; } });
+  if (!pv || !providers[pv]) return false;
+  const p = providers[pv]; let changed = false;
+  if (state.provider !== pv) { state.provider = pv; changed = true; }
+  if (s) { const n = p.norm(s); if (SYM_RE.test(n) && n !== symbols[pv]) { symbols[pv] = n; changed = true; } }
+  const t = tf && p.tfs.find(x => x.toLowerCase() === tf.toLowerCase());
+  if (t && t !== state.tf) { state.tf = t; changed = true; }
+  return changed;
+}
+function writeHash(){
+  const h = '#' + [state.provider, sym(), state.tf].map(encodeURIComponent).join('/');
+  if (location.hash !== h) { try { history.replaceState(null, '', h); } catch {} }
+}
+if (readHash()) saveState();
+
+/* ============================================================================
+   SCRIPT ENGINE - the user's formula scripts (the language itself is the formula block above)
+   ============================================================================ */
+const FX = window.Formula || null;
+
+/* ---- example scripts ---- */
+const EXAMPLES = [
+  { name:'MACD', src:`fast = input(12, "Fast", min=1)
+slow = input(26, "Slow", min=1)
+smooth = input(9, "Signal", min=1)
+
+macd = ema(close, fast) - ema(close, slow)
+signal = ema(macd, smooth)
+hist = macd - signal
+
+plot(hist, "Hist", color = hist >= 0 ? green : red, style=histogram, pane=below)
+plot(macd, "MACD", color=blue, pane=below)
+plot(signal, "Signal", color=orange, pane=below)` },
+  { name:'Donchian channel', src:`length = input(20, "Length", min=1)
+
+upper = highest(high, length)
+lower = lowest(low, length)
+
+plot(upper, "Upper", color=teal)
+plot(lower, "Lower", color=teal)
+plot((upper + lower) / 2, "Mid", color=teal, style=dashed)` },
+  { name:'Keltner channel', src:`length = input(20, "Length", min=1)
+mult = input(2, "ATR multiple", min=0, step=0.1)
+
+mid = ema(close, length)
+range = atr(length)
+
+plot(mid, "Mid", color=yellow)
+plot(mid + mult * range, "Upper", color=yellow, style=dotted)
+plot(mid - mult * range, "Lower", color=yellow, style=dotted)` },
+  { name:'SuperTrend', src:`factor = input(3, "Factor", min=0.5, step=0.5)
+length = input(10, "ATR length", min=1)
+
+st = supertrend(factor, length)
+plot(st, "SuperTrend", color = close > st ? green : red, width=2)` },
+  { name:'Stochastic', src:`length = input(14, "Length", min=1)
+smooth = input(3, "Smoothing", min=1)
+
+k = sma(stoch(close, high, low, length), smooth)
+d = sma(k, smooth)
+
+plot(k, "%K", color=blue, pane=below)
+plot(d, "%D", color=orange, pane=below)
+hline(80)
+hline(20)` },
+];
+const NEW_SCRIPT = `// Build a line from open, high, low, close and volume.
+// Open Reference below for everything you can use.
+length = input(20, "Length", min=1)
+
+plot(sma(close, length), "Average", color=orange)`;
+
+/* ---- saved scripts ---- */
+const MAX_SCRIPTS = 50;
+let scripts = store.get('scripts', null);
+if (!Array.isArray(scripts)) scripts = EXAMPLES.map((e, i) => ({ id:'ex' + i, name:e.name, src:e.src, on:false, inputs:{} }));
+{ const ids = new Set(); // tidy whatever was in storage
+  scripts = scripts.filter(sc => sc && typeof sc.src === 'string').slice(0, MAX_SCRIPTS).map((sc, i) => {
+    let id = /^[a-z0-9]{1,16}$/i.test(sc.id) && !ids.has(sc.id) ? sc.id : 'r' + i + Date.now().toString(36); ids.add(id);
+    return { id, name:String(sc.name || '').slice(0, 40), src:sc.src, on:!!sc.on, inputs: sc.inputs && typeof sc.inputs === 'object' ? sc.inputs : {} };
+  }); }
+const saveScripts = () => store.set('scripts', scripts);
+
+/* ---- compiling and running ---- */
+const compiled = new Map(); // script id -> { src, prog } or { src, err }
+const scriptInfo = {};      // script id -> { err } or { inputs, plots } from its latest run
+function runScript(sc){
+  if (!FX) return null;
+  let c = compiled.get(sc.id);
+  if (!c || c.src !== sc.src) { c = { src:sc.src }; try { c.prog = FX.compile(sc.src); } catch (e) { c.err = String(e.message || e); } compiled.set(sc.id, c); }
+  if (c.err) { scriptInfo[sc.id] = { err:c.err }; return null; }
+  try {
+    const tz = P().sessionTz, f = tz && (dayFmt[tz] = dayFmt[tz] || new Intl.DateTimeFormat('en-CA', { timeZone:tz, year:'numeric', month:'2-digit', day:'2-digit' }));
+    const r = c.prog.run(bars, sc.inputs, { sessionKey: t => f ? f.format(t * 1000) : Math.floor(t / 86400) });
+    scriptInfo[sc.id] = { inputs:r.inputs, plots:r.plots.length };
+    return r;
+  } catch (e) { scriptInfo[sc.id] = { err:String(e.message || e) }; return null; }
+}
+
+/* ============================================================================
+   CHART - drawing, and getting bars into it
+   ============================================================================ */
+
+/* ---- time formatting ---- */
+const intraday = () => TF_SECONDS[state.tf] < 86400;
+const toChartTime = t => t; // data stays in UTC; formatters below show local time (shifting timestamps breaks at DST changes)
+const tsOf = t => typeof t === 'number' ? t : Date.UTC(t.year, t.month-1, t.day)/1000;
+const fmtTime = t => {
+  const d = new Date(tsOf(t)*1000);
+  return intraday()
+    ? d.toLocaleString(undefined, { month:'short', day:'numeric', year:'2-digit', hour:'numeric', minute:'2-digit' })
+    : d.toLocaleDateString(undefined, { timeZone:'UTC', weekday:'short', month:'short', day:'numeric', year:'numeric' });
+};
+const fmtTick = (t, type) => {
+  const d = new Date(tsOf(t)*1000), tz = intraday() ? undefined : 'UTC';
+  switch (type) {
+    case 0: return d.toLocaleDateString(undefined, { timeZone:tz, year:'numeric' });
+    case 1: return d.toLocaleDateString(undefined, { timeZone:tz, month:'short' });
+    case 2: return d.toLocaleDateString(undefined, { timeZone:tz, day:'numeric' });
+    default: return d.toLocaleTimeString(undefined, { timeZone:tz, hour:'numeric', minute:'2-digit' });
+  }
+};
+
+/* ---- the chart itself ---- */
+const chart = LC.createChart($('chart'), {
+  autoSize: true,
+  localization: { timeFormatter: fmtTime },
+  layout: { background:{ type:'solid', color:'#0f1218' }, textColor:'#a3aab8', fontSize:12, panes:{ separatorColor:'#262c38', enableResize:true } },
+  grid: { vertLines:{ color:'#1a1f29' }, horzLines:{ color:'#1a1f29' } },
+  crosshair: { mode: LC.CrosshairMode.Normal },
+  rightPriceScale: { borderColor:'#262c38' },
+  timeScale: { borderColor:'#262c38', timeVisible:true, secondsVisible:false, rightOffset:6, tickMarkFormatter: fmtTick },
+});
+
+/* ---- price series ---- */
+function buildMain(){
+  if (mainSeries) { chart.removeSeries(mainSeries); mainSeries = null; priceLineObjs = []; }
+  const up = '#22ab94', dn = '#f23645';
+  switch (state.type) {
+    case 'line': mainSeries = chart.addSeries(LC.LineSeries, { color:'#3d8bfd', lineWidth:2 }); break;
+    case 'area': mainSeries = chart.addSeries(LC.AreaSeries, { lineColor:'#3d8bfd', topColor:'rgba(61,139,253,.35)', bottomColor:'rgba(61,139,253,0)', lineWidth:2 }); break;
+    case 'bars': mainSeries = chart.addSeries(LC.BarSeries, { upColor:up, downColor:dn }); break;
+    default: mainSeries = chart.addSeries(LC.CandlestickSeries, { upColor:up, downColor:dn, borderVisible:false, wickUpColor:up, wickDownColor:dn });
+  }
+}
+
+function heikin(src){ const out = []; let po, pc;
+  src.forEach((b,i) => { const c = (b.open+b.high+b.low+b.close)/4, o = i ? (po+pc)/2 : (b.open+b.close)/2;
+    out.push({ ...b, open:o, close:c, high:Math.max(b.high,o,c), low:Math.min(b.low,o,c) }); po = o; pc = c; }); return out; }
+
+function mainData(){
+  const src = state.type === 'heikin' ? heikin(bars) : bars;
+  return (state.type === 'line' || state.type === 'area')
+    ? src.map(b => ({ time:toChartTime(b.time), value:b.close }))
+    : src.map(b => ({ time:toChartTime(b.time), open:b.open, high:b.high, low:b.low, close:b.close }));
+}
+
+/* ---- indicator and script series ---- */
+function clearIndicators(){
+  indSeries.forEach(s => { try { chart.removeSeries(s.series); } catch {} }); indSeries = [];
+  // drop empty sub-panes
+  try { const panes = chart.panes(); for (let i = panes.length-1; i > 0; i--) if (!panes[i].getSeries().length) chart.removePane(i); } catch {}
+}
+
+function lineData(vals){ const out = []; vals.forEach((v,i) => { if (v != null && isFinite(v)) out.push({ time:toChartTime(bars[i].time), value:v }); }); return out; }
+
+// Describes every enabled indicator series and its data, without touching the chart.
+function indicatorSpecs(){
+  const closes = bars.map(b => b.close), specs = [];
+  const add = (key, type, opts, pane, data, label, setup) => specs.push({ key, type, opts, pane, data, label, setup });
+  let nextPane = 1;
+
+  if (state.ind.volume) {
+    add('volume', LC.HistogramSeries, { priceScaleId:'vol', priceFormat:{ type:'volume' } }, 0,
+      bars.map(b => ({ time:toChartTime(b.time), value:b.volume||0, color: b.close >= b.open ? 'rgba(34,171,148,.35)' : 'rgba(242,54,69,.35)' })), 'Vol',
+      s => s.priceScale().applyOptions({ scaleMargins:{ top:0.82, bottom:0 } }));
+  }
+  if (state.ind.sma20) add('sma20', LC.LineSeries, { color:IND.sma20.color, lineWidth:1 }, 0, lineData(sma(closes,20)), 'SMA20');
+  if (state.ind.sma50) add('sma50', LC.LineSeries, { color:IND.sma50.color, lineWidth:1 }, 0, lineData(sma(closes,50)), 'SMA50');
+  if (state.ind.ema200) add('ema200', LC.LineSeries, { color:IND.ema200.color, lineWidth:1 }, 0, lineData(ema(closes,200)), 'EMA200');
+  if (state.ind.vwap && intraday()) add('vwap', LC.LineSeries, { color:IND.vwap.color, lineWidth:1, lineStyle:2 }, 0, lineData(vwapSession(bars, P().sessionTz)), 'VWAP');
+  if (state.ind.bb) {
+    const m = sma(closes,20), sd = stdev(closes,20,m);
+    add('bbm', LC.LineSeries, { color:IND.bb.color, lineWidth:1, lineStyle:2 }, 0, lineData(m), 'BB mid');
+    add('bbu', LC.LineSeries, { color:IND.bb.color, lineWidth:1 }, 0, lineData(m.map((v,i)=> v==null?null:v+2*sd[i])), 'BB up');
+    add('bbl', LC.LineSeries, { color:IND.bb.color, lineWidth:1 }, 0, lineData(m.map((v,i)=> v==null?null:v-2*sd[i])), 'BB low');
+  }
+  if (state.ind.rsi) {
+    const pane = nextPane++;
+    add('rsi', LC.LineSeries, { color:IND.rsi.color, lineWidth:1, lastValueVisible:true }, pane, lineData(rsi(closes,14)), 'RSI', s => {
+      s.createPriceLine({ price:70, color:'#5b6475', lineStyle:2, lineWidth:1, axisLabelVisible:false });
+      s.createPriceLine({ price:30, color:'#5b6475', lineStyle:2, lineWidth:1, axisLabelVisible:false });
+    });
+  }
+  if (state.ind.macd) {
+    const pane = nextPane++;
+    const f = ema(closes,12), sl = ema(closes,26), macd = f.map((v,i)=> v==null||sl[i]==null?null:v-sl[i]);
+    const valid = macd.map(v => v==null?0:v), firstIdx = Math.max(0, macd.findIndex(v => v!=null));
+    const sigRaw = ema(valid.slice(firstIdx), 9), sig = new Array(firstIdx).fill(null).concat(sigRaw);
+    add('macdh', LC.HistogramSeries, {}, pane, macd.map((v,i)=> v==null||sig[i]==null?null:{ time:toChartTime(bars[i].time), value:v-sig[i], color: v-sig[i] >= 0 ? 'rgba(34,171,148,.6)' : 'rgba(242,54,69,.6)' }).filter(Boolean), 'Hist');
+    add('macd', LC.LineSeries, { color:'#3d8bfd', lineWidth:1 }, pane, lineData(macd), 'MACD');
+    add('macds', LC.LineSeries, { color:'#ff8a3d', lineWidth:1 }, pane, lineData(sig), 'Signal');
+  }
+  scripts.forEach(sc => { // user scripts; all of one script's `below` plots share a pane
+    if (!sc.on) return;
+    const r = runScript(sc); if (!r) return;
+    let pane = null;
+    r.plots.forEach((pl, i) => {
+      const below = pl.pane === 'below'; if (below && pane == null) pane = nextPane++;
+      const perBar = Array.isArray(pl.color) ? pl.color : null, base = perBar ? (perBar.find(Boolean) || '#7c8494') : pl.color;
+      const isLine = pl.style !== 'histogram' && pl.style !== 'area' && pl.style !== 'dots';
+      const data = []; let prev = null;
+      pl.values.forEach((v, k) => {
+        if (v === v && isFinite(v)) { const d = { time:toChartTime(bars[k].time), value:v }; if (perBar && perBar[k]) d.color = perBar[k]; data.push(d); prev = d; }
+        // a point's colour paints the segment after it, so hiding that segment is what breaks the line at a gap
+        else if (prev) { if (isLine) prev.color = 'rgba(0,0,0,0)'; prev = null; }
+      });
+      let type = LC.LineSeries, opts = { color:base, lineWidth:pl.width, lineStyle: pl.style === 'dashed' ? 2 : pl.style === 'dotted' ? 1 : 0, lastValueVisible: below && !pl.hline };
+      if (pl.style === 'dots') opts = { color:base, lineVisible:false, pointMarkersVisible:true, pointMarkersRadius:pl.width + 1, lastValueVisible:false };
+      else if (pl.style === 'histogram') { type = LC.HistogramSeries; opts = { color:base }; }
+      else if (pl.style === 'area') { type = LC.AreaSeries; opts = { lineColor:base, topColor:base + '59', bottomColor:base + '00', lineWidth:pl.width }; }
+      add('s:' + sc.id + ':' + i, type, opts, below ? pane : 0, data, pl.hline ? '' : (pl.title || sc.name || 'Script'));
+    });
+  });
+  return specs;
+}
+
+function buildIndicators(){
+  clearIndicators();
+  if (!bars.length) return;
+  indicatorSpecs().forEach(sp => {
+    const s = chart.addSeries(sp.type, Object.assign({ priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false }, sp.opts), sp.pane);
+    s.setData(sp.data); if (sp.setup) sp.setup(s);
+    indSeries.push({ key:sp.key, series:s, label:sp.label, data:sp.data });
+  });
+  try { chart.panes().forEach((p,i) => p.setStretchFactor(i === 0 ? 4 : 1)); } catch {}
+  mainSeries.priceScale().applyOptions({ scaleMargins:{ top:0.08, bottom: state.ind.volume ? 0.22 : 0.08 } });
+}
+
+// Refresh path: bars[from..] are new or changed, everything before is untouched.
+// Pushes just those points into the existing series instead of rebuilding them.
+function updateTail(from){
+  const specs = indicatorSpecs();
+  if (!mainSeries || specs.length !== indSeries.length || specs.some((sp,i) => sp.key !== indSeries[i].key)) return false;
+  const t0 = toChartTime(bars[from].time);
+  const tail = data => { let i = data.length; while (i > 0 && data[i-1].time >= t0) i--; return data.slice(i); };
+  if (from > 0) { // the bar just before the change can only be redrawn by a rebuild, so check it still looks the same
+    const tp = toChartTime(bars[from-1].time);
+    const at = data => { for (let i = data.length - 1; i >= 0 && data[i].time >= tp; i--) if (data[i].time === tp) return data[i]; return null; };
+    const same = (a, b) => (!a && !b) || (!!a && !!b && a.value === b.value && a.color === b.color);
+    if (specs.some((sp,i) => !same(at(sp.data), at(indSeries[i].data)))) return false;
+  }
+  try {
+    tail(mainData()).forEach(d => mainSeries.update(d));
+    specs.forEach((sp,i) => { tail(sp.data).forEach(d => indSeries[i].series.update(d)); indSeries[i].data = sp.data; });
+  } catch { return false; }
+  return true;
+}
+
+/* ---- price lines and full redraw ---- */
+function applyLines(){
+  priceLineObjs.forEach(l => { try { mainSeries.removePriceLine(l); } catch {} }); priceLineObjs = [];
+  (lines[state.provider+':'+sym()] || []).forEach(p => priceLineObjs.push(mainSeries.createPriceLine({ price:p, color:'#e3a33b', lineWidth:1, lineStyle:0, axisLabelVisible:true, title:'' })));
+}
+
+function render(fit){
+  mainSeries.setData(mainData());
+  buildIndicators();
+  applyLines();
+  updateLegend();
+  if (fit) { chart.timeScale().fitContent(); const n = bars.length; if (n > 150) chart.timeScale().setVisibleLogicalRange({ from:n-150, to:n+5 }); }
+}
+
+/* ---- legend ---- */
+function updateLegend(param){
+  if (!bars.length) { $('legend').innerHTML = `<span class="t">${esc(sym())}</span>`; return; }
+  let idx = bars.length - 1;
+  if (param && param.logical != null && param.logical >= 0 && param.logical < bars.length) idx = Math.round(param.logical);
+  const b = bars[idx], prev = bars[idx-1], chg = prev ? (b.close-prev.close)/prev.close*100 : null;
+  const cls = pctCls(b.close - (prev ? prev.close : b.open));
+  let ind = '';
+  if (param && param.seriesData) {
+    const parts = indSeries.filter(s => s.label && !['volume','macdh'].includes(s.key)).map(s => { const d = param.seriesData.get(s.series); return d && d.value != null ? `${esc(s.label)} <span style="color:var(--text)">${fmt(d.value)}</span>` : null; }).filter(Boolean);
+    if (parts.length) ind = `<div class="ind">${parts.join(' · ')}</div>`;
+  }
+  $('legend').innerHTML = `<span class="t">${esc(sym())}</span><span style="color:var(--muted)">${TF_LABELS[state.tf]} · ${P().label.split(' · ')[1].replace(/ \(.*\)/,'')}</span><br>`
+    + `<span class="k">O</span> <span class="${cls}">${fmt(b.open)}</span><span class="k">H</span> <span class="${cls}">${fmt(b.high)}</span>`
+    + `<span class="k">L</span> <span class="${cls}">${fmt(b.low)}</span><span class="k">C</span> <span class="${cls}">${fmt(b.close)}</span>`
+    + ` <span class="${pctCls(chg)}">${pctTxt(chg)}</span><span class="k">Vol</span> ${fmtVol(b.volume)}` + ind;
+}
+chart.subscribeCrosshairMove(updateLegend);
+
+/* ---- loading bars ---- */
+async function load(fit = true){
+  if (!fit && userLoad && userLoad === loadToken) return; // a chart the user asked for is still on its way and brings fresh bars itself
+  const my = ++loadToken, p = P(), s = sym(), key = curKey();
+  writeHash();
+  if (p.needsKey && !settings.tdKey) {
+    bars = []; barsKey = ''; mainSeries.setData([]); clearIndicators(); updateLegend();
+    overlay(`Stocks need a free Twelve Data key.<br><br><span style="color:var(--muted)">Open ⚙ Settings and paste it in. Meanwhile, switch the data source to Crypto or Demo to try things out.</span>`);
+    setStatus('err', 'No API key'); return;
+  }
+  if (fit) { overlay(''); setStatus('busy', `Loading ${s}…`); userLoad = my; }
+  try {
+    const raw = await p.bars(s, state.tf, undefined, fit ? 'user' : 'refresh', () => my === loadToken), seen = new Map();
+    raw.forEach(b => seen.set(b.time, b)); // drop duplicate timestamps, keep latest
+    const data = [...seen.values()].sort((a,b) => a.time - b.time);
+    if (my !== loadToken) return;
+    if (!data.length) throw new Error('No data returned for ' + s);
+    const sameChart = key === barsKey;
+    // on a refresh, keep any older history already paged in by scrolling back
+    if (!fit && sameChart && bars.length) {
+      const old = bars, next = old.filter(b => b.time < data[0].time).concat(data);
+      const same = (a, b) => a.time === b.time && a.open === b.open && a.high === b.high && a.low === b.low && a.close === b.close && a.volume === b.volume;
+      let d = 0; while (d < old.length && d < next.length && same(old[d], next[d])) d++;
+      bars = next;
+      if (d < next.length || next.length !== old.length) { // something changed; normally just the last bar, or a new one
+        if (next.length >= old.length && d >= old.length - 1 && updateTail(d)) updateLegend();
+        else render(false);
+      }
+    } else {
+      bars = data; barsKey = key;
+      render(fit || !sameChart);
+    }
+    overlay(''); setStatus('ok', 'Live');
+    $('updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    if (my !== loadToken) return;
+    const msg = String(e.message || e);
+    setStatus('err', msg.length > 80 ? msg.slice(0,80)+'…' : msg);
+    if (fit) overlay(`Couldn't load <b>${esc(s)}</b><br><span style="color:var(--muted)">${esc(msg)}</span>`);
+  } finally { if (userLoad === my) userLoad = 0; }
+}
+
+/* ---- older history (loads as you scroll back) ---- */
+async function loadOlder(){
+  const key = barsKey;
+  if (olderBusy || !bars.length || key !== curKey() || noOlder[key] || Date.now() < olderRetryAt) return;
+  olderBusy = true;
+  const wasLive = $('statusText').textContent === 'Live';
+  if (wasLive) setStatus('busy', 'Loading older bars…');
+  try {
+    const first = bars[0].time, seen = new Map();
+    (await P().bars(sym(), state.tf, first, 'refresh', () => key === barsKey && key === curKey())).forEach(b => { if (b.time < first) seen.set(b.time, b); });
+    if (key !== barsKey) return;
+    const older = [...seen.values()].sort((a,b) => a.time - b.time);
+    if (!older.length) { noOlder[key] = true; return; }
+    bars = older.concat(bars);
+    render(false); // the time scale is anchored to the latest bar, so the view stays put
+  } catch (e) { if (!e || e.message !== 'CANCELLED') olderRetryAt = Date.now() + 30000; }
+  finally {
+    olderBusy = false;
+    if (wasLive && key === barsKey && $('statusText').textContent !== 'Live' && $('statusDot').className.includes('busy')) setStatus('ok', 'Live');
+  }
+}
+let olderTimer = null;
+chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+  clearTimeout(olderTimer);
+  olderTimer = setTimeout(() => { const r = chart.timeScale().getVisibleLogicalRange(); if (r && r.from < 10) loadOlder(); }, 200);
+});
+
+/* ---- automatic refresh ---- */
+function schedule(){
+  clearInterval(refreshTimer); clearInterval(quoteTimer);
+  if (settings.refresh === '0') return;
+  refreshTimer = setInterval(() => { if (!document.hidden) load(false); }, P().refreshMs);
+  quoteTimer = setInterval(() => { if (!document.hidden) refreshQuotes(); }, P().quoteRefreshMs);
+}
+
+/* ============================================================================
+   UI - everything around the chart
+   ============================================================================ */
+
+/* ---- status line and overlay ---- */
+function setStatus(kind, text){ $('statusDot').className = 'dot ' + (kind||''); $('statusText').textContent = text; }
+function overlay(msg){ $('overlay').classList.toggle('show', !!msg); $('overlayMsg').innerHTML = msg || ''; }
+
+/* ---- watchlist ---- */
+let quotes = {}, quotedAt = {}, quoteRound = {};
+function renderWatch(){
+  const list = watch[state.provider], cur = sym();
+  $('wl').innerHTML = list.map(s => { let q = quotes[state.provider+':'+s];
+    const bad = q && q.bad; if (bad) q = null;
+    const price = bad ? '<span title="No quote — check the symbol, or it may need a paid plan" style="color:var(--down)">n/a</span>' : q ? fmt(q.price) : '—';
+    const e = esc(s);
+    return `<div class="row ${s===cur?'active':''}" data-s="${e}"><span class="s">${e}</span><span class="p">${price}</span><span class="c ${q?pctCls(q.pct):''}">${q?pctTxt(q.pct):''}</span><button class="x" data-x="${e}" title="Remove">×</button></div>`; }).join('');
+  $('wlNote').textContent = state.provider === 'twelvedata' ? (settings.tdKey ? TD_QUOTE_BATCH + ' per round · rotates' : 'needs key') : '';
+}
+async function refreshQuotes(only){
+  const p = P(), prov = state.provider;
+  if (p.needsKey && !settings.tdKey) { renderWatch(); return; }
+  let list = only ? [only] : watch[prov];
+  if (prov === 'twelvedata' && !only) { // free tier: a few per round, never-quoted / stalest first
+    const age = s => quotedAt[prov+':'+s] || 0;
+    list = list.slice().sort((a,b) => age(a) - age(b)).slice(0, TD_QUOTE_BATCH);
+  }
+  if (!only) { if (quoteRound[prov]) return; quoteRound[prov] = true; } // a round still waiting for credits: don't queue another behind it
+  try {
+    const q = await p.quotes(list), now = Date.now();
+    for (const s in q) { quotedAt[prov+':'+s] = now; if (q[s]) quotes[prov+':'+s] = q[s]; else quotes[prov+':'+s] = { bad:true }; }
+  } catch {}
+  if (!only) quoteRound[prov] = false;
+  if (prov === state.provider) renderWatch();
+}
+$('wl').addEventListener('click', e => {
+  const x = e.target.closest('[data-x]');
+  if (x) { e.stopPropagation(); watch[state.provider] = watch[state.provider].filter(s => s !== x.dataset.x); store.set('watch', watch); renderWatch(); return; }
+  const r = e.target.closest('.row'); if (r) setSymbol(r.dataset.s);
+});
+function addWatch(){
+  const v = $('wlAdd').value; if (!v.trim()) return;
+  const s = P().norm(v); if (!watch[state.provider].includes(s)) watch[state.provider].push(s);
+  store.set('watch', watch); $('wlAdd').value = ''; renderWatch(); refreshQuotes(s);
+}
+$('wlAddBtn').onclick = addWatch;
+$('wlAdd').addEventListener('keydown', e => { if (e.key === 'Enter') addWatch(); });
+
+/* ---- symbol and timeframe ---- */
+function setSymbol(s){ symbols[state.provider] = s; $('symInput').value = s; saveState(); renderWatch(); applyLinesSafe(); load(true); }
+function applyLinesSafe(){ try { applyLines(); } catch {} }
+$('symInput').addEventListener('keydown', e => { if (e.key === 'Enter') { const s = P().norm(e.target.value); if (s) setSymbol(s); e.target.blur(); } });
+
+function renderTfs(){
+  const p = P(); if (!p.tfs.includes(state.tf)) state.tf = p.tfs.includes('1h') ? '1h' : p.tfs[0];
+  $('tfGroup').innerHTML = p.tfs.map(t => `<button data-tf="${t}" class="${t===state.tf?'on':''}">${TF_LABELS[t]}</button>`).join('');
+}
+$('tfGroup').addEventListener('click', e => { const b = e.target.closest('[data-tf]'); if (!b) return; state.tf = b.dataset.tf; saveState(); renderTfs(); load(true); });
+
+/* ---- chart type ---- */
+$('chartType').value = state.type;
+$('chartType').onchange = e => { state.type = e.target.value; saveState(); buildMain(); if (bars.length) render(false); };
+
+/* ---- indicator menu ---- */
+function renderIndMenu(){
+  const builtIn = Object.entries(IND).map(([k,v]) => `<label><input type="checkbox" data-ind="${k}" ${state.ind[k]?'checked':''}><span class="sw" style="background:${v.color}"></span>${v.name}</label>`).join('');
+  const list = !FX ? '<div class="note">The formula language did not load, so scripts are unavailable.</div>'
+    : scripts.map(sc => `<label><input type="checkbox" data-script="${sc.id}" ${sc.on?'checked':''}><span class="nm">${esc(sc.name || 'Untitled')}</span>${sc.on && scriptInfo[sc.id] && scriptInfo[sc.id].err ? '<span class="warn" title="This script has an error">⚠</span>' : ''}<button class="mini" data-edit="${sc.id}" title="Edit script">✎</button></label>`).join('')
+      + '<button class="btn new" id="newScript">+ New script</button>';
+  $('indDrop').innerHTML = builtIn + '<div class="sep">Scripts</div>' + list;
+}
+function redrawIndicators(){ buildIndicators(); updateLegend(); }
+renderIndMenu();
+$('indDrop').addEventListener('change', e => {
+  const k = e.target.dataset.ind, id = e.target.dataset.script;
+  if (k) { state.ind[k] = e.target.checked; saveState(); redrawIndicators(); }
+  else if (id) { const sc = scripts.find(x => x.id === id); if (!sc) return; sc.on = e.target.checked; saveScripts(); redrawIndicators(); if (edId === id) edRefresh(); }
+});
+$('indDrop').addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit]');
+  if (ed) { e.preventDefault(); openEditor(ed.dataset.edit); return; }
+  if (e.target.id === 'newScript') {
+    if (scripts.length >= MAX_SCRIPTS) return;
+    const sc = { id:'s' + Date.now().toString(36), name:'My script', src:NEW_SCRIPT, on:true, inputs:{} };
+    scripts.push(sc); saveScripts(); redrawIndicators(); openEditor(sc.id);
+  }
+});
+$('indBtn').onclick = e => { e.stopPropagation(); renderIndMenu(); $('indMenu').classList.toggle('open'); };
+
+/* ---- script editor: changes apply to the chart as you type ---- */
+let edId = null, edTimer = null, edInputSig = null;
+const edScript = () => scripts.find(x => x.id === edId);
+function openEditor(id){
+  if (edId) closeEditor();
+  edId = id; const sc = edScript(); if (!sc) { edId = null; return; }
+  $('indMenu').classList.remove('open');
+  $('edName').value = sc.name; $('edSrc').value = sc.src; edInputSig = null; $('edInputs').innerHTML = '';
+  $('editor').classList.add('show'); edRefresh(); $('edSrc').focus();
+}
+function closeEditor(){ if (edTimer) edApply(); edId = null; $('editor').classList.remove('show'); }
+function edApply(){
+  clearTimeout(edTimer); edTimer = null;
+  const sc = edScript(); if (!sc) return;
+  sc.name = $('edName').value.trim().slice(0, 40); sc.src = $('edSrc').value;
+  saveScripts(); if (sc.on) redrawIndicators(); edRefresh();
+}
+function edQueue(){ clearTimeout(edTimer); edTimer = setTimeout(edApply, 350); }
+function edRefresh(){
+  const sc = edScript(); if (!sc) return;
+  $('edOn').checked = sc.on;
+  if (!sc.on || !bars.length) runScript(sc); // not drawn just now, so check it here
+  const info = scriptInfo[sc.id] || {}, m = $('edMsg');
+  m.className = 'ed-msg' + (info.err ? ' err' : sc.on ? '' : ' off');
+  m.textContent = info.err || (sc.on ? `OK · drawing ${info.plots} series` : 'OK · hidden (tick Show to draw it)');
+  if (!info.inputs) return; // keep the last good form while the script has an error
+  const sig = JSON.stringify(info.inputs.map(q => [q.key, q.def, q.min, q.max, q.step]));
+  if (sig === edInputSig) return;
+  edInputSig = sig;
+  const attr = (n, v) => typeof v === 'number' && isFinite(v) ? ` ${n}="${v}"` : '';
+  $('edInputs').innerHTML = info.inputs.map(q => `<label>${esc(q.title)} <input type="number" data-key="${esc(q.key)}" value="${q.value}"${attr('min', q.min)}${attr('max', q.max)} step="${typeof q.step === 'number' && q.step > 0 ? q.step : 'any'}"></label>`).join('');
+}
+$('edSrc').addEventListener('input', edQueue);
+$('edName').addEventListener('input', edQueue);
+$('edSrc').addEventListener('keydown', e => {
+  if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); e.target.setRangeText('  ', e.target.selectionStart, e.target.selectionEnd, 'end'); edQueue(); }
+  else if (e.key === 'Escape') e.target.blur(); // so Tab can move on from the editor
+});
+$('edInputs').addEventListener('input', e => {
+  const sc = edScript(), key = e.target.dataset.key; if (!sc || !key) return;
+  const v = parseFloat(e.target.value);
+  if (isFinite(v)) sc.inputs[key] = v; else delete sc.inputs[key]; // empty box goes back to the script's default
+  saveScripts(); if (sc.on) redrawIndicators(); edRefresh();
+});
+$('edOn').onchange = e => { const sc = edScript(); if (!sc) return; if (edTimer) edApply(); sc.on = e.target.checked; saveScripts(); redrawIndicators(); edRefresh(); };
+$('edClose').onclick = closeEditor;
+$('edDelete').onclick = () => {
+  const sc = edScript(); if (!sc || !confirm(`Delete "${sc.name || 'Untitled'}"? This cannot be undone.`)) return;
+  clearTimeout(edTimer); edTimer = null;
+  scripts = scripts.filter(x => x !== sc); compiled.delete(sc.id); delete scriptInfo[sc.id];
+  saveScripts(); edId = null; $('editor').classList.remove('show'); redrawIndicators();
+};
+if (FX) {
+  const groups = {}; FX.reference.forEach(r => (groups[r.group] = groups[r.group] || []).push(r));
+  $('edRef').innerHTML = '<p>One statement per line: <code>name = expression</code>, or a call such as <code>plot(...)</code>. <code>//</code> starts a comment.</p>'
+    + '<p><code>x[1]</code> is x one bar ago. <code>a ? b : c</code> picks b where a is true, otherwise c. Combine conditions with <code>and</code>, <code>or</code>, <code>not</code>. <code>na</code> means no value.</p>'
+    + `<h4>Price series</h4><p><code>${esc(FX.series.join(', '))}</code></p>`
+    + `<h4>Colours</h4><p><code>${esc(FX.colors.join(', '))}</code>, or a code such as <code>"#ff8800"</code></p>`
+    + Object.entries(groups).map(([g, rs]) => `<h4>${esc(g)}</h4>` + rs.map(r => `<p><code>${esc(r.sig)}</code> ${esc(r.doc.replace(/`/g, ''))}</p>`).join('')).join('');
+}
+document.addEventListener('click', e => { if (!$('indMenu').contains(e.target)) $('indMenu').classList.remove('open'); });
+
+/* ---- drawing price lines ---- */
+$('hlineBtn').onclick = () => { hlineMode = !hlineMode; $('hlineBtn').classList.toggle('on', hlineMode); $('chart').style.cursor = hlineMode ? 'crosshair' : ''; };
+chart.subscribeClick(param => {
+  if (!hlineMode || !param.point || !mainSeries) return;
+  const price = mainSeries.coordinateToPrice(param.point.y); if (price == null) return;
+  const k = state.provider+':'+sym(); (lines[k] = lines[k] || []).push(+price.toPrecision(8)); store.set('lines', lines);
+  applyLines(); hlineMode = false; $('hlineBtn').classList.remove('on'); $('chart').style.cursor = '';
+});
+$('clearLinesBtn').onclick = () => { delete lines[state.provider+':'+sym()]; store.set('lines', lines); applyLines(); };
+
+/* ---- data source picker ---- */
+$('providerSel').innerHTML = Object.entries(providers).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
+$('providerSel').value = state.provider;
+$('providerSel').onchange = e => { state.provider = e.target.value; saveState(); switchProvider(); };
+function switchProvider(){
+  $('symInput').value = sym(); $('delayNote').textContent = P().delay; $('updated').textContent = ''; tdDayShow();
+  renderTfs(); renderWatch(); schedule(); applyLinesSafe(); load(true); refreshQuotes();
+}
+
+/* ---- settings ---- */
+$('settingsBtn').onclick = () => { $('tdKey').value = settings.tdKey; $('refreshSel').value = settings.refresh; $('settings').classList.add('show'); };
+$('settingsCancel').onclick = () => $('settings').classList.remove('show');
+$('settings').addEventListener('click', e => { if (e.target.id === 'settings') $('settings').classList.remove('show'); });
+$('settingsSave').onclick = () => {
+  const newKey = $('tdKey').value.trim();
+  if (newKey !== settings.tdKey) { tdSave([]); tdDayMem = null; store.set('tdDay', null); } // a different key has its own budget
+  settings.tdKey = newKey; settings.refresh = $('refreshSel').value; store.set('settings', settings);
+  $('settings').classList.remove('show'); tdDayShow(); schedule(); load(true); refreshQuotes();
+};
+
+/* ---- keyboard and page events ---- */
+// type anywhere to jump to the symbol box
+document.addEventListener('keydown', e => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'Escape') { hlineMode = false; $('hlineBtn').classList.remove('on'); $('chart').style.cursor=''; $('settings').classList.remove('show'); return; }
+  if (/^[a-z0-9]$/i.test(e.key)) { $('symInput').value = ''; $('symInput').focus(); }
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(false); refreshQuotes(); } });
+window.addEventListener('hashchange', () => { if (readHash()) { saveState(); $('providerSel').value = state.provider; switchProvider(); } });
+
+/* ============================================================================
+   START - build the chart and load the first data
+   ============================================================================ */
+buildMain();
+switchProvider();
+})();
+</script>
+</body>
+</html>
