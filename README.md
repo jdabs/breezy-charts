@@ -2,6 +2,8 @@
 
 A personal price-chart app in one static file, for use on your own computer. No build step, no server, no account: open `index.html` and it works.
 
+**[Try the demo](https://jdabs.github.io/breezy-charts/)** with simulated prices in your browser. The demo has no live data. For real crypto and stock prices, download `index.html` from this repository: it includes the Coinbase and Twelve Data sources.
+
 ![BreezyCharts showing BTC-USD on the 1-hour timeframe](screenshot.png)
 
 ## What it does
